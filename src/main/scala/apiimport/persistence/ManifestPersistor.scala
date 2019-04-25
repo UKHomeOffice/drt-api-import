@@ -39,29 +39,35 @@ case class ManifestPersistor(tables: apiimport.slickdb.Tables)(implicit ec: Exec
       case (zipFile, jsonFile, vm) => addDowWoy(zipFile, jsonFile, vm)
     }
     .mapAsync(6) {
-      case Some((zf, jf, vm, dow, woy)) => removeExisting(zf, jf, vm, dow, woy)
-      case None => Future(None)
+      case (zipFile, jsonFile, vm, dow, woy) => removeExisting(zipFile, jsonFile, vm, dow, woy)
     }
     .mapAsync(6) {
-      case Some((zf, jf, vm, dow, woy)) =>
-        val eventualUnit = db.run(manifestTable.rowsToInsert(vm, dow, woy, jf))
-        eventualUnit.flatMap {
-          _ =>
-            val maybeSuspiciousDate: Option[Boolean] = for {
-              zipDate <- zipFileDate(zf)
-              scdDate <- vm.scheduleArrivalDateTime
-            } yield {
-              scdDate.millisSinceEpoch - zipDate.millisSinceEpoch > 2 * oneDayMillis
-            }
-            val suspiciousDate = maybeSuspiciousDate.getOrElse(false)
-            val processedAt = new Timestamp(SDate.now().millisSinceEpoch)
-            val processedJsonFileToInsert = tables.ProcessedManifestSource += tables.ProcessedManifestSourceRow(zf, jf, suspiciousDate, processedAt)
-            db.run(processedJsonFileToInsert)
-        }
-      case None => Future(0)
+      case (zipFile, jsonFile, vm, dow, woy) => persistManifest(zipFile, jsonFile, vm, dow, woy)
     }
 
-  def removeExisting(zf: String, jf: String, vm: VoyageManifest, dow: Int, woy: Int): Future[Option[(String, String, VoyageManifest, Int, Int)]] = {
+  def persistManifest(zf: String, jf: String, vm: VoyageManifest, dow: Int, woy: Int): Future[Int] = db
+    .run(manifestTable.rowsToInsert(vm, dow, woy, jf))
+    .flatMap { _ => persistProcessedJsonRecord(zf, jf, vm) }
+
+  def persistProcessedJsonRecord(zf: String, jf: String, vm: VoyageManifest): Future[Int] = {
+    val suspiciousDate: Boolean = scheduledIsSuspicious(zf, vm)
+    val processedAt = new Timestamp(SDate.now().millisSinceEpoch)
+    val processedJsonFileToInsert = tables.ProcessedManifestSource += tables.ProcessedManifestSourceRow(zf, jf, suspiciousDate, processedAt)
+    db.run(processedJsonFileToInsert)
+  }
+
+  def scheduledIsSuspicious(zf: String, vm: VoyageManifest): Boolean = {
+    val maybeSuspiciousDate: Option[Boolean] = for {
+      zipDate <- zipFileDate(zf)
+      scdDate <- vm.scheduleArrivalDateTime
+    } yield {
+      scdDate.millisSinceEpoch - zipDate.millisSinceEpoch > 2 * oneDayMillis
+    }
+
+    maybeSuspiciousDate.getOrElse(false)
+  }
+
+  def removeExisting(zf: String, jf: String, vm: VoyageManifest, dow: Int, woy: Int): Future[(String, String, VoyageManifest, Int, Int)] = {
     val schTs = new Timestamp(vm.scheduleArrivalDateTime.map(_.millisSinceEpoch).getOrElse(0L))
     val value = tables.VoyageManifestPassengerInfo.filter(r => {
       r.event_code === vm.EventCode &&
@@ -73,16 +79,15 @@ case class ManifestPersistor(tables: apiimport.slickdb.Tables)(implicit ec: Exec
 
     db.run(value.delete).map(deletedCount => {
       if (deletedCount > 0) log.info(s"Removed $deletedCount existing entries")
-      Option(zf, jf, vm, dow, woy)
+      (zf, jf, vm, dow, woy)
     })
   }
 
-  def addDowWoy(zipFile: String, jsonFile: String, vm: VoyageManifest): Future[Option[(String, String, VoyageManifest, Int, Int)]] = {
+  def addDowWoy(zipFile: String, jsonFile: String, vm: VoyageManifest): Future[(String, String, VoyageManifest, Int, Int)] = {
     val schTs = new Timestamp(vm.scheduleArrivalDateTime.map(_.millisSinceEpoch).getOrElse(0L))
 
-    db.run(manifestTable.dayOfWeekAndWeekOfYear(schTs)).map {
-      case Some((dow, woy)) => Option((zipFile, jsonFile, vm, dow, woy))
-      case None => None
+    db.run(manifestTable.dayOfWeekAndWeekOfYear(schTs)).collect {
+      case Some((dow, woy)) => (zipFile, jsonFile, vm, dow, woy)
     }
   }
 
