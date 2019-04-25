@@ -5,7 +5,7 @@ import java.sql.Timestamp
 import apiimport.manifests.VoyageManifestParser.{PassengerInfoJson, VoyageManifest}
 import drtlib.SDate
 import org.scalatest._
-import slickdb.{Tables, VoyageManifestPassengerInfoTable}
+import apiimport.slickdb.{Tables, ProcessedManifestSourceTable}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
@@ -19,7 +19,7 @@ class DbSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
 
   import H2Tables.profile.api._
 
-  val vmTable: VoyageManifestPassengerInfoTable = VoyageManifestPassengerInfoTable(H2Tables)
+  val vmTable: ProcessedManifestSourceTable = ProcessedManifestSourceTable(H2Tables)
   val db = Database.forConfig("tsql.db")
 
   override def beforeAll(): Unit = {

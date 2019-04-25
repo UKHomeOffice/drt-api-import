@@ -1,4 +1,4 @@
-package slickdb
+package apiimport.slickdb
 
 import java.sql.Timestamp
 
@@ -6,12 +6,9 @@ import apiimport.manifests.VoyageManifestParser
 import apiimport.manifests.VoyageManifestParser.VoyageManifest
 import com.typesafe.scalalogging.Logger
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 import scala.util.Try
 
-object PostgresTables extends {
-  val profile = slick.jdbc.PostgresProfile
-} with Tables
 
 case class VoyageManifestPassengerInfoTable(tables: Tables) {
   val log = Logger(getClass)
@@ -27,7 +24,7 @@ case class VoyageManifestPassengerInfoTable(tables: Tables) {
   def voyageManifestRows(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, jsonFile: String): List[VoyageManifestPassengerInfoRow] = {
     val schTs = new Timestamp(vm.scheduleArrivalDateTime.map(_.millisSinceEpoch).getOrElse(0L))
 
-    vm.PassengerList.map { passenger => passengerRow(vm, dayOfWeek, weekOfYear, schTs, passenger, jsonFile) }
+    vm.bestPassengers.map { passenger => passengerRow(vm, dayOfWeek, weekOfYear, schTs, passenger, jsonFile) }
   }
 
   def passengerRow(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, schTs: Timestamp, p: VoyageManifestParser.PassengerInfoJson, jsonFile: String): tables.VoyageManifestPassengerInfoRow = {

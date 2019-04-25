@@ -38,6 +38,23 @@ object VoyageManifestParser {
     def scheduleArrivalDateTime: Option[SDate] = Try(DateTime.parse(scheduleDateTimeString)).toOption.map(SDate(_))
 
     def scheduleDateTimeString: String = s"${ScheduledDateOfArrival}T${ScheduledTimeOfArrival}Z"
+
+    def interactivePassengers: List[PassengerInfoJson] = PassengerList.filter {
+      case PassengerInfoJson(_, _, _, _, _, _, _, _, Some(id)) => id != ""
+      case _ => false
+    }
+
+    def nonInteractivePassengers: List[PassengerInfoJson] = PassengerList.filterNot {
+      case PassengerInfoJson(_, _, _, _, _, _, _, _, Some(id)) => id != ""
+      case _ => false
+    }
+
+    def hasInteractivePassengers: Boolean = PassengerList.exists {
+      case PassengerInfoJson(_, _, _, _, _, _, _, _, Some(id)) => id != ""
+      case _ => false
+    }
+
+    def bestPassengers: List[PassengerInfoJson] = if (hasInteractivePassengers) interactivePassengers else nonInteractivePassengers
   }
 
   object FlightPassengerInfoProtocol extends DefaultJsonProtocol {

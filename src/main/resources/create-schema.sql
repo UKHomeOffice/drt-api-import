@@ -27,17 +27,11 @@ CREATE INDEX egate_eligibility ON public.voyage_manifest_passenger_info (event_c
 CREATE INDEX egate_eligibility_with_scheduled ON public.voyage_manifest_passenger_info (event_code, arrival_port_code, document_type, nationality_country_code, age);
 CREATE INDEX unique_arrival ON public.voyage_manifest_passenger_info (arrival_port_code, departure_port_code, scheduled_date, voyage_number);
 
-CREATE TABLE public.failed_manifest (
-    source_file_name character varying (50),
-    json_file_name character varying (50),
-    json text
-);
-
-CREATE INDEX failed_manifest_source ON public.failed_manifest (source_file_name);
-
 CREATE TABLE public.processed_manifest_source (
     source_file_name character varying (50),
+    json_file_name character varying (50),
     processed_at timestamp without time zone
 );
 
 CREATE INDEX processed_manifest_source_file ON public.processed_manifest_source (source_file_name);
+CREATE INDEX processed_manifest_json_file ON public.processed_manifest_source (json_file_name);
