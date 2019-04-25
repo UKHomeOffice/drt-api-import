@@ -34,10 +34,10 @@ case class LocalApiProvider(pathToFiles: String)(implicit actorSystem: ActorSyst
 
   def getListOfFiles(dir: String): List[File] = {
     val d = new File(dir)
-    if (d.exists && d.isDirectory) {
+
+    if (d.exists && d.isDirectory)
       d.listFiles.filter(_.isFile).toList
-    } else {
+    else
       List[File]()
-    }
   }
 }

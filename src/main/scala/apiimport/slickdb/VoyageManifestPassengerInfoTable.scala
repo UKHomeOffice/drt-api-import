@@ -37,14 +37,14 @@ case class VoyageManifestPassengerInfoTable(tables: Tables) {
       schTs,
       dayOfWeek,
       weekOfYear,
-      p.DocumentType.getOrElse("n/a"),
+      p.DocumentType.getOrElse(""),
       p.DocumentIssuingCountryCode,
       p.EEAFlag,
       p.Age.flatMap(maybeAge => Try(maybeAge.toInt).toOption).getOrElse(-1),
-      p.DisembarkationPortCode.getOrElse("n/a"),
+      p.DisembarkationPortCode.getOrElse(""),
       p.InTransitFlag,
-      p.DocumentIssuingCountryCode,
-      p.NationalityCountryCode.getOrElse("n/a"),
+      p.DisembarkationPortCountryCode.getOrElse(""),
+      p.NationalityCountryCode.getOrElse(""),
       p.PassengerIdentifier.getOrElse(""),
       p.InTransitFlag match {
         case "Y" => true

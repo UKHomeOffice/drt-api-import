@@ -2,6 +2,7 @@ package apiimport
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import apiimport.PostgresTables.profile
 import apiimport.persistence.ManifestPersistor
 import apiimport.provider.{ApiProviderLike, LocalApiProvider, S3ApiProvider}
 import com.amazonaws.auth.AWSCredentials
@@ -27,7 +28,6 @@ object Main extends App {
       LocalApiProvider(localImportPath)
     else {
       val bucketName = config.getString("s3.api-data.bucket-name")
-
       val awsCredentials: AWSCredentials = new AWSCredentials {
         override def getAWSAccessKeyId: String = config.getString("s3.api-data.credentials.access_key_id")
 
@@ -42,7 +42,17 @@ object Main extends App {
 
   val provider = providerFromConfig(localImportPath)
 
-  val poller = new ManifestPoller(provider, ManifestPersistor(PostgresTables))
+  val poller = new ManifestPoller(provider, ManifestPersistor(PostgresDb))
 
   poller.startPollingForManifests()
+}
+
+trait Db {
+  val tables: apiimport.slickdb.Tables
+  val con: tables.profile.backend.Database
+}
+
+object PostgresDb extends Db {
+  val tables: PostgresTables.type = PostgresTables
+  val con: profile.backend.Database = tables.profile.backend.Database.forConfig("db")
 }
