@@ -22,7 +22,6 @@ trait ApiProviderLike {
       case (zipFileName, jsonsOrManifests) =>
         val manifests = jsonsOrManifests.collect { case Right(manifest) => manifest }
         val failedJsons = jsonsOrManifests.collect { case Left(failedJson) => failedJson }
-        log.info(s"Got ${manifests.length} manifests, and ${failedJsons.length} failures")
         (zipFileName, manifests, failedJsons)
     }
 

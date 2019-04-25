@@ -15,7 +15,7 @@ trait Tables {
   /** DDL for all tables. Call .create to execute. */
   lazy val schema: profile.SchemaDescription = VoyageManifestPassengerInfo.schema ++ ProcessedManifestSource.schema
 
-  case class ProcessedManifestSourceRow(source_file_name: String, json_file_name: String, processed_at: Timestamp)
+  case class ProcessedManifestSourceRow(source_file_name: String, json_file_name: String, suspicious_date: Boolean, processed_at: Timestamp)
 
   case class VoyageManifestPassengerInfoRow(event_code: String,
                                             arrival_port_code: String,
@@ -52,15 +52,16 @@ trait Tables {
   }
 
   class ProcessedManifestSource(_tableTag: Tag) extends profile.api.Table[ProcessedManifestSourceRow](_tableTag, maybeSchema, "processed_manifest_source") {
-    def * = (source_file_name, json_file_name, processed_at) <> (ProcessedManifestSourceRow.tupled, ProcessedManifestSourceRow.unapply)
+    def * = (source_file_name, json_file_name, suspicious_date, processed_at) <> (ProcessedManifestSourceRow.tupled, ProcessedManifestSourceRow.unapply)
 
     val source_file_name: Rep[String] = column[String]("source_file_name")
     val json_file_name: Rep[String] = column[String]("json_file_name")
+    val suspicious_date: Rep[Boolean] = column[Boolean]("suspicious_date")
     val processed_at: Rep[Timestamp] = column[Timestamp]("processed_at")
   }
 
   /** Table description of table arrival. Objects of this class serve as prototypes for rows in queries. */
-  class VoyageManifestPassengerInfo(_tableTag: Tag) extends profile.api.Table[VoyageManifestPassengerInfoRow](_tableTag, maybeSchema, "voyage_manifest_passenger_info") {
+  class VoyageManifestPassengerInfo(_tableTag: Tag) extends profile.api.Table[VoyageManifestPassengerInfoRow](_tableTag, maybeSchema, "voyage_manifest_passenger") {
     def * = (event_code, arrival_port_code, departure_port_code, voyage_number, carrier_code, scheduled_date, day_of_week, week_of_year, document_type, document_issuing_country_code, eea_flag, age, disembarkation_port_code, in_transit_flag, disembarkation_port_country_code, nationality_country_code, passenger_identifier, in_transit, json_file) <> (VoyageManifestPassengerInfoRow.tupled, VoyageManifestPassengerInfoRow.unapply)
 
     val event_code: Rep[String] = column[String]("event_code")

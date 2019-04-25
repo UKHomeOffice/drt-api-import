@@ -22,7 +22,7 @@ class ManifestPoller(provider: ApiProviderLike, persistor: ManifestPersistor)
       persistor.lastPersistedFileName
         .map {
           case Some(lpf) => lpf
-          case None => "drt_dq_171015"
+          case None => ""
         }
         .flatMap { lpf =>
           persistor

@@ -10,16 +10,26 @@ import org.slf4j.{Logger, LoggerFactory}
 import apiimport.slickdb.{ProcessedManifestSourceTable, VoyageManifestPassengerInfoTable}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.matching.Regex
 
 
 case class ManifestPersistor(tables: apiimport.slickdb.Tables)(implicit ec: ExecutionContext) {
   val log: Logger = LoggerFactory.getLogger(getClass)
+
+  val dqRegex: Regex = "drt_dq_([0-9]{2})([0-9]{2})([0-9]{2})_[0-9]{6}_[0-9]{4}\\.zip".r
 
   val manifestTable = VoyageManifestPassengerInfoTable(tables)
   val sourceTable = ProcessedManifestSourceTable(tables)
   val db: tables.profile.backend.Database = tables.profile.api.Database.forConfig("db")
 
   import tables.profile.api._
+
+  def zipFileDate(fileName: String): Option[SDate] = fileName match {
+    case dqRegex(year, month, day) => Option(SDate(s"20$year-$month-$day"))
+    case _ => None
+  }
+
+  val oneDayMillis: Long = 60 * 60 * 24 * 1000L
 
   def addPersistence(manifestsAndFailures: Source[(String, List[(String, VoyageManifest)], List[(String, String)]), NotUsed]): Source[Int, NotUsed] = manifestsAndFailures
     .mapConcat {
@@ -35,10 +45,18 @@ case class ManifestPersistor(tables: apiimport.slickdb.Tables)(implicit ec: Exec
     .mapAsync(6) {
       case Some((zf, jf, vm, dow, woy)) =>
         val eventualUnit = db.run(manifestTable.rowsToInsert(vm, dow, woy, jf))
-        eventualUnit.flatMap { _ =>
-          val processedAt = new Timestamp(SDate.now().millisSinceEpoch)
-          val processedJsonFileToInsert = tables.ProcessedManifestSource += tables.ProcessedManifestSourceRow(zf, jf, processedAt)
-          db.run(processedJsonFileToInsert)
+        eventualUnit.flatMap {
+          _ =>
+            val maybeSuspiciousDate: Option[Boolean] = for {
+              zipDate <- zipFileDate(zf)
+              scdDate <- vm.scheduleArrivalDateTime
+            } yield {
+              scdDate.millisSinceEpoch - zipDate.millisSinceEpoch > 2 * oneDayMillis
+            }
+            val suspiciousDate = maybeSuspiciousDate.getOrElse(false)
+            val processedAt = new Timestamp(SDate.now().millisSinceEpoch)
+            val processedJsonFileToInsert = tables.ProcessedManifestSource += tables.ProcessedManifestSourceRow(zf, jf, suspiciousDate, processedAt)
+            db.run(processedJsonFileToInsert)
         }
       case None => Future(0)
     }
