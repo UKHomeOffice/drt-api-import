@@ -33,24 +33,26 @@ case class ManifestPersistor(db: Db)(implicit ec: ExecutionContext) {
 
   val oneDayMillis: Long = 60 * 60 * 24 * 1000L
 
-  def addPersistence(zipTries: Source[(String, Try[List[(String, Try[VoyageManifest])]]), NotUsed]): Source[Seq[Int], NotUsed] = zipTries
+  def addPersistence(zipTries: Source[(String, Try[List[(String, Try[VoyageManifest])]]), NotUsed]): Source[Int, NotUsed] = zipTries
     .mapConcat {
       case (zipFile, Failure(t)) =>
         log.error(s"Recording a failed zip", t)
         Await.ready(persistProcessedZipRecord(zipFile, success = false), 1 second)
         List()
-      case (zipFile, Success(manifestTries)) => manifestTries
-        .map {
-          case (jsonFile, Failure(t)) =>
-            log.error(s"Recording a failed json file", t)
-            Await.ready(persistFailedJsonRecord(zipFile, jsonFile), 1 second)
-            None
-          case (jsonFile, Success(manifest)) =>
-            Option(zipFile, jsonFile, manifest)
-        }
-        .collect {
-          case Some(tuple) => tuple
-        }
+      case (zipFile, Success(manifestTries)) =>
+        Await.ready(persistProcessedZipRecord(zipFile, success = true), 1 second)
+        manifestTries
+          .map {
+            case (jsonFile, Failure(t)) =>
+              log.error(s"Recording a failed json file", t)
+              Await.ready(persistFailedJsonRecord(zipFile, jsonFile), 1 second)
+              None
+            case (jsonFile, Success(manifest)) =>
+              Option(zipFile, jsonFile, manifest)
+          }
+          .collect {
+            case Some(tuple) => tuple
+          }
     }
     .mapAsync(12) {
       case (zipFile, jsonFile, vm) => addDowWoy(zipFile, jsonFile, vm)
@@ -58,9 +60,7 @@ case class ManifestPersistor(db: Db)(implicit ec: ExecutionContext) {
     .mapAsync(6) {
       case (zipFile, jsonFile, vm, dow, woy) =>
         removeExisting(zipFile, jsonFile, vm, dow, woy)
-          .flatMap(_ => Future.sequence(Seq(
-            persistManifest(zipFile, jsonFile, vm, dow, woy),
-            persistProcessedZipRecord(zipFile, success = true))))
+          .flatMap(_ => persistManifest(zipFile, jsonFile, vm, dow, woy))
     }
 
   val con: db.tables.profile.backend.DatabaseDef = db.con
