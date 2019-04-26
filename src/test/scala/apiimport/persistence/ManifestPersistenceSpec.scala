@@ -13,15 +13,21 @@ import org.scalatest._
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
-import scala.util.{Success, Try}
+import scala.language.postfixOps
+import scala.util.{Failure, Success, Try}
 
 
 class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
+  implicit val actorSystem: ActorSystem = ActorSystem("api-data-import")
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val ec: ExecutionContextExecutor = ExecutionContext.global
 
   val vmTable: VoyageManifestPassengerInfoTable = VoyageManifestPassengerInfoTable(H2Tables)
 
   import apiimport.H2Db.tables.profile.api._
+
+
+  val persistor = ManifestPersistor(H2Db)
 
   "A request to insert a VoyageManifest" should "result in a row being inserted for each passenger" in {
     val vm = VoyageManifest("DC", "LHR", "JFK", "0123", "BA", "2019-01-01", "12:00", List(
@@ -46,9 +52,7 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
     result should be(expected)
   }
 
-  "A request to persist a VoyageManifest from a zip file" should "result in entries in the VoyageManifestPassenger & ProcessedManifestSource tables" in {
-    val persistor = ManifestPersistor(H2Db)
-
+  "A request to persist a VoyageManifest from a zip file" should "result in entries in the VoyageManifestPassenger & ProcessedJson & ProcessedZip tables" in {
     val vm = VoyageManifest("DC", "LHR", "JFK", "0123", "BA", "2019-01-01", "06:00", List(
       PassengerInfoJson(Some("P"), "GBR", "T", Some("1"), Some("LHR"), "N", Some("GBR"), Some("GBR"), Some("00001")),
       PassengerInfoJson(Some("I"), "GBR", "F", Some("2"), Some("LHR"), "N", Some("GBR"), Some("GBR"), Some("00002"))
@@ -59,24 +63,27 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
     val zipFile = "someZip"
     val manifestSource = Source(List((zipFile, Success(List((jsonFile, Success(vm)))))))
 
-    implicit val actorSystem: ActorSystem = ActorSystem("api-data-import")
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
-
     Await.ready(persistor.addPersistence(manifestSource).runWith(Sink.seq), 1 second)
 
     val paxEntries = H2Tables.VoyageManifestPassengerInfo.result
-    val result = Await.result(H2Db.con.run(paxEntries), 1 second)
+    val paxRows = Await.result(H2Db.con.run(paxEntries), 1 second)
+    val jsonEntries = H2Tables.ProcessedJson.result
+    val jsonRowsAsTuple = Await.result(H2Db.con.run(jsonEntries), 1 second).map(r => (r.zip_file_name, r.json_file_name, r.suspicious_date, r.success))
+    val zipEntries = H2Tables.ProcessedZip.result
+    val zipRowsAsTuple = Await.result(H2Db.con.run(zipEntries), 1 second).map(r => (r.zip_file_name, r.success))
 
-    val expected = Vector(
+    val expectedPaxRows = Vector(
       H2Tables.VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, 3, 1, "P", "GBR", "T", 1, "LHR", "N", "GBR", "GBR", "00001", in_transit = false, jsonFile),
       H2Tables.VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, 3, 1, "I", "GBR", "F", 2, "LHR", "N", "GBR", "GBR", "00002", in_transit = false, jsonFile))
+    val expectedJsonRowsAsTuple = List((zipFile, jsonFile, false, true))
+    val expectedZipRowsAsTuple = List((zipFile, true))
 
-    result should be(expected)
+    paxRows should be(expectedPaxRows)
+    jsonRowsAsTuple should be(expectedJsonRowsAsTuple)
+    zipRowsAsTuple should be(expectedZipRowsAsTuple)
   }
 
   "Persisting 2 manifests for the same flight in the same stream" should "result only in entries from the second manifest" in {
-    val persistor = ManifestPersistor(H2Db)
-
     val vm = VoyageManifest("DC", "LHR", "JFK", "0123", "BA", "2019-01-01", "06:00", List(
       PassengerInfoJson(Some("P"), "GBR", "T", Some("1"), Some("LHR"), "N", Some("GBR"), Some("GBR"), Some("00001")),
       PassengerInfoJson(Some("I"), "GBR", "F", Some("2"), Some("LHR"), "N", Some("GBR"), Some("GBR"), Some("00002"))
@@ -90,9 +97,6 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
     val zipFile = "someZip"
     val manifestSource = Source(List((zipFile, Success(List((jsonFile, Success(vm)), (jsonFile, Success(vm2)))))))
 
-    implicit val actorSystem: ActorSystem = ActorSystem("api-data-import")
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
-
     Await.ready(persistor.addPersistence(manifestSource).runWith(Sink.seq), 1 second)
 
     val paxEntries = H2Tables.VoyageManifestPassengerInfo.result
@@ -105,8 +109,6 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
   }
 
   "Persisting 2 manifests for the same flight in consecutive streams" should "result only in entries from the second manifest" in {
-    val persistor = ManifestPersistor(H2Db)
-
     val vm = VoyageManifest("DC", "LHR", "JFK", "0123", "BA", "2019-01-01", "06:00", List(
       PassengerInfoJson(Some("P"), "GBR", "T", Some("1"), Some("LHR"), "N", Some("GBR"), Some("GBR"), Some("00001")),
       PassengerInfoJson(Some("I"), "GBR", "F", Some("2"), Some("LHR"), "N", Some("GBR"), Some("GBR"), Some("00002"))
@@ -121,9 +123,6 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
     val manifestSource = Source(List((zipFile, Success(List((jsonFile, Success(vm)))))))
     val manifestSource2 = Source(List((zipFile, Success(List((jsonFile, Success(vm2)))))))
 
-    implicit val actorSystem: ActorSystem = ActorSystem("api-data-import")
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
-
     Await.ready(persistor.addPersistence(manifestSource).runWith(Sink.seq), 1 second)
     Await.ready(persistor.addPersistence(manifestSource2).runWith(Sink.seq), 1 second)
 
@@ -137,8 +136,6 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
   }
 
   "Persisting 2 manifests for the same flight with different event codes" should "result only in all entries being persisted" in {
-    val persistor = ManifestPersistor(H2Db)
-
     val vmDc = VoyageManifest("DC", "LHR", "JFK", "0123", "BA", "2019-01-01", "06:00", List(
       PassengerInfoJson(Some("P"), "GBR", "T", Some("1"), Some("LHR"), "N", Some("GBR"), Some("GBR"), Some("00001")),
       PassengerInfoJson(Some("I"), "GBR", "F", Some("2"), Some("LHR"), "N", Some("GBR"), Some("GBR"), Some("00002"))
@@ -152,9 +149,6 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
     val zipFile = "someZip"
     val manifestSource = Source(List((zipFile, Success(List((jsonFile, Success(vmDc)))))))
     val manifestSource2 = Source(List((zipFile, Success(List((jsonFile, Success(vmCi)))))))
-
-    implicit val actorSystem: ActorSystem = ActorSystem("api-data-import")
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
 
     Await.ready(persistor.addPersistence(manifestSource).runWith(Sink.seq), 1 second)
     Await.ready(persistor.addPersistence(manifestSource2).runWith(Sink.seq), 1 second)
@@ -171,8 +165,6 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
   }
 
   "Persisting a manifest containing both iAPI and non-iAPI pax" should "result only in only the iAPI pax entries being persisted" in {
-    val persistor = ManifestPersistor(H2Db)
-
     val vmDc = VoyageManifest("DC", "LHR", "JFK", "0123", "BA", "2019-01-01", "06:00", List(
       PassengerInfoJson(Some("P"), "GBR", "T", Some("1"), Some("LHR"), "N", Some("GBR"), Some("GBR"), Some("00001")),
       PassengerInfoJson(Some("I"), "GBR", "F", Some("2"), Some("LHR"), "N", Some("GBR"), Some("GBR"), Some("00002")),
@@ -185,9 +177,6 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
     val zipFile = "someZip"
     val manifestSource = Source(List((zipFile, Success(List((jsonFile, Success(vmDc)))))))
 
-    implicit val actorSystem: ActorSystem = ActorSystem("api-data-import")
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
-
     Await.ready(persistor.addPersistence(manifestSource).runWith(Sink.seq), 1 second)
 
     val paxEntries = H2Tables.VoyageManifestPassengerInfo.result
@@ -198,5 +187,22 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
       H2Tables.VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, 3, 1, "I", "GBR", "F", 2, "LHR", "N", "GBR", "GBR", "00002", in_transit = false, jsonFile))
 
     result should be(expected)
+  }
+
+  "Persisting a failed zip file" should "result in an entry in the processed_zip table" in {
+    val persistor = ManifestPersistor(H2Db)
+
+    val zipFile = "someZip"
+    val failure: Try[List[(String, Try[VoyageManifest])]] = Failure(new Exception("yeah"))
+    val manifestSource = Source(List((zipFile, failure)))
+
+    Await.ready(persistor.addPersistence(manifestSource).runWith(Sink.seq), 1 second)
+
+    val zipEntries = H2Tables.ProcessedZip.result
+    val zipRowsAsTuple = Await.result(H2Db.con.run(zipEntries), 1 second).map(r => (r.zip_file_name, r.success))
+
+    val expected = List((zipFile, false))
+
+    zipRowsAsTuple should be (expected)
   }
 }

@@ -16,7 +16,7 @@ class ManifestPoller(provider: ApiProviderLike, persistor: ManifestPersistor)
                     (implicit actorSystem: ActorSystem, materializer: Materializer, executionContext: ExecutionContext) {
   val log: Logger = Logger(getClass)
 
-  def startPollingForManifests(): Future[immutable.Seq[Seq[Int]]] = Source
+  def startPollingForManifests(): Future[immutable.Seq[Seq[Seq[Int]]]] = Source
     .tick(0 seconds, 1 minute, NotUsed)
     .mapAsync(1) { _ =>
       persistor.lastPersistedFileName

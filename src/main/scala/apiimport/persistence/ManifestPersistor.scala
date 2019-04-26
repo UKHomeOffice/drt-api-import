@@ -10,7 +10,9 @@ import apiimport.slickdb.VoyageManifestPassengerInfoTable
 import drtlib.SDate
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
@@ -31,15 +33,17 @@ case class ManifestPersistor(db: Db)(implicit ec: ExecutionContext) {
 
   val oneDayMillis: Long = 60 * 60 * 24 * 1000L
 
-  def addPersistence(zipTries: Source[(String, Try[List[(String, Try[VoyageManifest])]]), NotUsed]): Source[Int, NotUsed] = zipTries
+  def addPersistence(zipTries: Source[(String, Try[List[(String, Try[VoyageManifest])]]), NotUsed]): Source[Seq[Int], NotUsed] = zipTries
     .mapConcat {
       case (zipFile, Failure(t)) =>
-        log.info(s"Persisting a failed zip")
+        log.error(s"Recording a failed zip", t)
+        Await.ready(persistProcessedZipRecord(zipFile, success = false), 1 second)
         List()
-      case (zipFile, Success(manifestTries)) =>
-        manifestTries.map {
+      case (zipFile, Success(manifestTries)) => manifestTries
+        .map {
           case (jsonFile, Failure(t)) =>
-            log.info(s"Persisting a failed json file")
+            log.error(s"Recording a failed json file", t)
+            Await.ready(persistFailedJsonRecord(zipFile, jsonFile), 1 second)
             None
           case (jsonFile, Success(manifest)) =>
             Option(zipFile, jsonFile, manifest)
@@ -54,7 +58,9 @@ case class ManifestPersistor(db: Db)(implicit ec: ExecutionContext) {
     .mapAsync(6) {
       case (zipFile, jsonFile, vm, dow, woy) =>
         removeExisting(zipFile, jsonFile, vm, dow, woy)
-          .flatMap(_ => persistManifest(zipFile, jsonFile, vm, dow, woy))
+          .flatMap(_ => Future.sequence(Seq(
+            persistManifest(zipFile, jsonFile, vm, dow, woy),
+            persistProcessedZipRecord(zipFile, success = true))))
     }
 
   val con: db.tables.profile.backend.DatabaseDef = db.con
@@ -66,8 +72,20 @@ case class ManifestPersistor(db: Db)(implicit ec: ExecutionContext) {
   def persistProcessedJsonRecord(zf: String, jf: String, vm: VoyageManifest): Future[Int] = {
     val suspiciousDate: Boolean = scheduledIsSuspicious(zf, vm)
     val processedAt = new Timestamp(SDate.now().millisSinceEpoch)
-    val processedJsonFileToInsert = db.tables.ProcessedManifestSource += db.tables.ProcessedManifestSourceRow(zf, jf, suspiciousDate, processedAt)
+    val processedJsonFileToInsert = db.tables.ProcessedJson += db.tables.ProcessedJsonRow(zf, jf, suspiciousDate, success = true, processedAt)
     con.run(processedJsonFileToInsert)
+  }
+
+  def persistFailedJsonRecord(zf: String, jf: String): Future[Int] = {
+    val processedAt = new Timestamp(SDate.now().millisSinceEpoch)
+    val processedJsonFileToInsert = db.tables.ProcessedJson += db.tables.ProcessedJsonRow(zf, jf, suspicious_date = false, success = false, processedAt)
+    con.run(processedJsonFileToInsert)
+  }
+
+  def persistProcessedZipRecord(zf: String, success: Boolean): Future[Int] = {
+    val processedAt = new Timestamp(SDate.now().millisSinceEpoch)
+    val processedZipFileToInsert = db.tables.ProcessedZip += db.tables.ProcessedZipRow(zf, success, processedAt)
+    con.run(processedZipFileToInsert)
   }
 
   def scheduledIsSuspicious(zf: String, vm: VoyageManifest): Boolean = {
@@ -106,7 +124,7 @@ case class ManifestPersistor(db: Db)(implicit ec: ExecutionContext) {
   }
 
   def lastPersistedFileName: Future[Option[String]] = {
-    val sourceFileNamesQuery = db.tables.ProcessedManifestSource.map(_.source_file_name)
+    val sourceFileNamesQuery = db.tables.ProcessedJson.map(_.zip_file_name)
     con.run(sourceFileNamesQuery.max.result)
   }
 }

@@ -36,7 +36,7 @@ trait ApiProviderLike {
       .mapAsync(2) { fileName =>
         val zipInputStream = inputStream(fileName)
         val shortFileName = fileName.split("/").reverse.head
-        
+
         log.info(s"Processing $shortFileName")
 
         Future((shortFileName, tryJsonContent(zipInputStream)))

@@ -13,9 +13,11 @@ trait Tables {
   import slick.jdbc.{GetResult => GR}
 
   /** DDL for all tables. Call .create to execute. */
-  lazy val schema: profile.SchemaDescription = VoyageManifestPassengerInfo.schema ++ ProcessedManifestSource.schema
+  lazy val schema: profile.SchemaDescription = VoyageManifestPassengerInfo.schema ++ ProcessedJson.schema ++ ProcessedZip.schema
 
-  case class ProcessedManifestSourceRow(source_file_name: String, json_file_name: String, suspicious_date: Boolean, processed_at: Timestamp)
+  case class ProcessedZipRow(zip_file_name: String, success: Boolean, processed_at: Timestamp)
+
+  case class ProcessedJsonRow(zip_file_name: String, json_file_name: String, suspicious_date: Boolean, success: Boolean, processed_at: Timestamp)
 
   case class VoyageManifestPassengerInfoRow(event_code: String,
                                             arrival_port_code: String,
@@ -51,12 +53,21 @@ trait Tables {
       None
   }
 
-  class ProcessedManifestSource(_tableTag: Tag) extends profile.api.Table[ProcessedManifestSourceRow](_tableTag, maybeSchema, "processed_manifest_source") {
-    def * = (source_file_name, json_file_name, suspicious_date, processed_at) <> (ProcessedManifestSourceRow.tupled, ProcessedManifestSourceRow.unapply)
+  class ProcessedZip(_tableTag: Tag) extends profile.api.Table[ProcessedZipRow](_tableTag, maybeSchema, "processed_zip") {
+    def * = (zip_file_name, success, processed_at) <> (ProcessedZipRow.tupled, ProcessedZipRow.unapply)
 
-    val source_file_name: Rep[String] = column[String]("source_file_name")
+    val zip_file_name: Rep[String] = column[String]("zip_file_name")
+    val success: Rep[Boolean] = column[Boolean]("success")
+    val processed_at: Rep[Timestamp] = column[Timestamp]("processed_at")
+  }
+
+  class ProcessedJson(_tableTag: Tag) extends profile.api.Table[ProcessedJsonRow](_tableTag, maybeSchema, "processed_json") {
+    def * = (zip_file_name, json_file_name, suspicious_date, success, processed_at) <> (ProcessedJsonRow.tupled, ProcessedJsonRow.unapply)
+
+    val zip_file_name: Rep[String] = column[String]("zip_file_name")
     val json_file_name: Rep[String] = column[String]("json_file_name")
     val suspicious_date: Rep[Boolean] = column[Boolean]("suspicious_date")
+    val success: Rep[Boolean] = column[Boolean]("success")
     val processed_at: Rep[Timestamp] = column[Timestamp]("processed_at")
   }
 
@@ -87,5 +98,6 @@ trait Tables {
 
   /** Collection-like TableQuery object for table VoyageManifestPassengerInfo */
   lazy val VoyageManifestPassengerInfo = new TableQuery(tag => new VoyageManifestPassengerInfo(tag))
-  lazy val ProcessedManifestSource = new TableQuery(tag => new ProcessedManifestSource(tag))
+  lazy val ProcessedJson = new TableQuery(tag => new ProcessedJson(tag))
+  lazy val ProcessedZip = new TableQuery(tag => new ProcessedZip(tag))
 }

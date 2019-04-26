@@ -28,13 +28,25 @@ CREATE INDEX voyage_manifest_passenger_egate_eligibility_with_scheduled ON publi
 CREATE INDEX voyage_manifest_passenger_unique_arrival ON public.voyage_manifest_passenger (arrival_port_code, departure_port_code, scheduled_date, voyage_number);
 CREATE INDEX voyage_manifest_passenger_json_file ON public.voyage_manifest_passenger (json_file);
 
-CREATE TABLE public.processed_manifest_source (
-    source_file_name character varying (50),
+CREATE TABLE public.processed_json (
+    zip_file_name character varying (50),
     json_file_name character varying (50),
     suspicious_date boolean,
+    success boolean,
     processed_at timestamp without time zone
 );
 
-CREATE INDEX processed_manifest_source_source_file_name ON public.processed_manifest_source (source_file_name);
-CREATE INDEX processed_manifest_source_json_file_name ON public.processed_manifest_source (json_file_name);
-CREATE INDEX processed_manifest_source_suspicious_date ON public.processed_manifest_source (suspicious_date);
+CREATE INDEX processed_json_zip_file_name ON public.processed_json (zip_file_name);
+CREATE INDEX processed_json_json_file_name ON public.processed_json (json_file_name);
+CREATE INDEX processed_json_suspicious_date ON public.processed_json (suspicious_date);
+CREATE INDEX processed_json_succcess ON public.processed_json (success);
+
+
+CREATE TABLE public.processed_zip (
+    zip_file_name character varying (50),
+    success boolean,
+    processed_at timestamp without time zone
+);
+
+CREATE INDEX processed_zip_zip_file_name ON public.processed_zip (zip_file_name);
+CREATE INDEX processed_zip_succcess ON public.processed_zip (success);
