@@ -205,4 +205,22 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
 
     zipRowsAsTuple should be (expected)
   }
+
+  "Persisting a failed json file" should "result in an entry in the processed_json table" in {
+    val persistor = ManifestPersistor(H2Db)
+
+    val zipFile = "someJson"
+    val jsonFile = "someJson"
+    val failure: Try[VoyageManifest] = Failure(new Exception("yeah"))
+    val manifestSource = Source(List((zipFile, Success(List((jsonFile, failure))))))
+
+    Await.ready(persistor.addPersistence(manifestSource).runWith(Sink.seq), 1 second)
+
+    val jsonEntries = H2Tables.ProcessedJson.result
+    val jsonRowsAsTuple = Await.result(H2Db.con.run(jsonEntries), 1 second).map(r => (r.zip_file_name, r.json_file_name, r.suspicious_date, r.success))
+
+    val expected = List((zipFile, jsonFile, false, false))
+
+    jsonRowsAsTuple should be (expected)
+  }
 }
