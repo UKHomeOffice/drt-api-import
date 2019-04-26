@@ -10,22 +10,17 @@ import apiimport.manifests.VoyageManifestParser.VoyageManifest
 import com.typesafe.scalalogging.Logger
 
 import scala.collection.mutable.ArrayBuffer
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 import scala.util.matching.Regex
 
 trait ApiProviderLike {
   val log: Logger
   val dqRegex: Regex = "(drt_dq_[0-9]{6}_[0-9]{6})(_[0-9]{4}\\.zip)".r
 
-  def manifestsAndFailures(startingFileName: String): Source[(String, List[(String, VoyageManifest)], List[(String, String)]), NotUsed] = manifestsStream(startingFileName)
-    .map {
-      case (zipFileName, jsonsOrManifests) =>
-        val manifests = jsonsOrManifests.collect { case Right(manifest) => manifest }
-        val failedJsons = jsonsOrManifests.collect { case Left(failedJson) => failedJson }
-        (zipFileName, manifests, failedJsons)
-    }
+  def filesAsSource: Source[String, NotUsed]
 
-  def manifestsStream(latestFile: String): Source[(String, List[Either[(String, String), (String, VoyageManifest)]]), NotUsed]
+  def inputStream(file: String): ZipInputStream
 
   def filterNewer(latestFile: String)(fileName: String): Boolean = fileName >= filterFromFileName(latestFile) && fileName != latestFile
 
@@ -34,23 +29,31 @@ trait ApiProviderLike {
     case _ => latestFile
   }
 
-  def jsonsOrManifests(jsonManifests: List[(String, String)]): List[Either[(String, String), (String, VoyageManifest)]] = jsonManifests
-    .map { case (jsonFile, json) => (jsonFile, json, VoyageManifestParser.parseVoyagePassengerInfo(json)) }
-    .map {
-      case (jsonFile, _, Success(manifest)) => Right((jsonFile, manifest))
-      case (jsonFile, json, Failure(_)) => Left((jsonFile, json))
+  def manifestsStream(latestFile: String)(implicit ec: ExecutionContext): Source[(String, Try[List[(String, Try[VoyageManifest])]]), NotUsed] = {
+    log.info(s"Requesting DQ zip files > ${latestFile.take(20)}")
+    filesAsSource
+      .filter(f => filterNewer(latestFile)(f))
+      .mapAsync(2) { fileName =>
+        val zipInputStream = inputStream(fileName)
+        val shortFileName = fileName.split("/").reverse.head
+        
+        log.info(s"Processing $shortFileName")
+
+        Future((shortFileName, tryJsonContent(zipInputStream)))
+          .map { case (zipFileName, jsons) => (zipFileName, jsonsOrManifests(jsons)) }
+      }
+  }
+
+  def jsonsOrManifests(tryJsonManifests: Try[List[(String, String)]]): Try[List[(String, Try[VoyageManifest])]] = tryJsonManifests
+    .map { jsonManifests =>
+      jsonManifests.map {
+        case (jsonFile, json) => (jsonFile, VoyageManifestParser.parseVoyagePassengerInfo(json))
+      }
     }
 
   def fileNameAndContentFromZip[X](zipFileName: String,
-                                   zipInputStream: ZipInputStream): (String, List[(String, String)]) = {
-    val jsonContents = tryJsonContent(zipInputStream) match {
-      case Success(contents) =>
-        Try(zipInputStream.close())
-        contents
-      case Failure(e) =>
-        log.error("Failed to stream zip contents", e)
-        List.empty[(String, String)]
-    }
+                                   zipInputStream: ZipInputStream): (String, Try[List[(String, String)]]) = {
+    val jsonContents = tryJsonContent(zipInputStream)
 
     (zipFileName, jsonContents)
   }

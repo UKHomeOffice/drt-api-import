@@ -12,6 +12,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.matching.Regex
+import scala.util.{Failure, Success, Try}
 
 
 case class ManifestPersistor(db: Db)(implicit ec: ExecutionContext) {
@@ -30,9 +31,22 @@ case class ManifestPersistor(db: Db)(implicit ec: ExecutionContext) {
 
   val oneDayMillis: Long = 60 * 60 * 24 * 1000L
 
-  def addPersistence(manifestsAndFailures: Source[(String, List[(String, VoyageManifest)], List[(String, String)]), NotUsed]): Source[Int, NotUsed] = manifestsAndFailures
+  def addPersistence(zipTries: Source[(String, Try[List[(String, Try[VoyageManifest])]]), NotUsed]): Source[Int, NotUsed] = zipTries
     .mapConcat {
-      case (zipFile, manifests, _) => manifests.map { case (jsonFile, vm) => (zipFile, jsonFile, vm) }
+      case (zipFile, Failure(t)) =>
+        log.info(s"Persisting a failed zip")
+        List()
+      case (zipFile, Success(manifestTries)) =>
+        manifestTries.map {
+          case (jsonFile, Failure(t)) =>
+            log.info(s"Persisting a failed json file")
+            None
+          case (jsonFile, Success(manifest)) =>
+            Option(zipFile, jsonFile, manifest)
+        }
+        .collect {
+          case Some(tuple) => tuple
+        }
     }
     .mapAsync(12) {
       case (zipFile, jsonFile, vm) => addDowWoy(zipFile, jsonFile, vm)

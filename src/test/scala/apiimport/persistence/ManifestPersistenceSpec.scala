@@ -13,7 +13,7 @@ import org.scalatest._
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
-import scala.language.postfixOps
+import scala.util.{Success, Try}
 
 
 class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
@@ -57,9 +57,7 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
 
     val jsonFile = "someJson"
     val zipFile = "someZip"
-    val manifestSource = Source(List(
-      (zipFile, List((jsonFile, vm)), List())
-    ))
+    val manifestSource = Source(List((zipFile, Success(List((jsonFile, Success(vm)))))))
 
     implicit val actorSystem: ActorSystem = ActorSystem("api-data-import")
     implicit val materializer: ActorMaterializer = ActorMaterializer()
@@ -90,7 +88,7 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
 
     val jsonFile = "someJson"
     val zipFile = "someZip"
-    val manifestSource = Source(List((zipFile, List((jsonFile, vm), (jsonFile, vm2)), List())))
+    val manifestSource = Source(List((zipFile, Success(List((jsonFile, Success(vm)), (jsonFile, Success(vm2)))))))
 
     implicit val actorSystem: ActorSystem = ActorSystem("api-data-import")
     implicit val materializer: ActorMaterializer = ActorMaterializer()
@@ -120,8 +118,8 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
 
     val jsonFile = "someJson"
     val zipFile = "someZip"
-    val manifestSource = Source(List((zipFile, List((jsonFile, vm)), List())))
-    val manifestSource2 = Source(List((zipFile, List((jsonFile, vm2)), List())))
+    val manifestSource = Source(List((zipFile, Success(List((jsonFile, Success(vm)))))))
+    val manifestSource2 = Source(List((zipFile, Success(List((jsonFile, Success(vm2)))))))
 
     implicit val actorSystem: ActorSystem = ActorSystem("api-data-import")
     implicit val materializer: ActorMaterializer = ActorMaterializer()
@@ -152,8 +150,8 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
 
     val jsonFile = "someJson"
     val zipFile = "someZip"
-    val manifestSource = Source(List((zipFile, List((jsonFile, vmDc)), List())))
-    val manifestSource2 = Source(List((zipFile, List((jsonFile, vmCi)), List())))
+    val manifestSource = Source(List((zipFile, Success(List((jsonFile, Success(vmDc)))))))
+    val manifestSource2 = Source(List((zipFile, Success(List((jsonFile, Success(vmCi)))))))
 
     implicit val actorSystem: ActorSystem = ActorSystem("api-data-import")
     implicit val materializer: ActorMaterializer = ActorMaterializer()
@@ -185,7 +183,7 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
 
     val jsonFile = "someJson"
     val zipFile = "someZip"
-    val manifestSource = Source(List((zipFile, List((jsonFile, vmDc)), List())))
+    val manifestSource = Source(List((zipFile, Success(List((jsonFile, Success(vmDc)))))))
 
     implicit val actorSystem: ActorSystem = ActorSystem("api-data-import")
     implicit val materializer: ActorMaterializer = ActorMaterializer()
