@@ -24,5 +24,6 @@ lazy val root = (project in file("."))
       slickCodegen,
       slickHirakiCp,
       sprayJson
-    )).value
+    )).value,
+    parallelExecution in Test := false
   )

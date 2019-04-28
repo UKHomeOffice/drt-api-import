@@ -27,10 +27,6 @@ class ApiProviderSpec extends FlatSpec with Matchers with Builder {
   implicit val ec: ExecutionContextExecutor = ExecutionContext.global
 
   val vmTable: VoyageManifestPassengerInfoTable = VoyageManifestPassengerInfoTable(H2Tables)
-
-  import apiimport.H2Db.tables.profile.api._
-
-
   val provider = TestApiProvider()
   val persistor = ManifestPersistor(H2Db)
 

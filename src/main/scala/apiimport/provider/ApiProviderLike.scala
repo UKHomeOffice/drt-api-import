@@ -31,15 +31,19 @@ trait ApiProviderLike {
 
   def manifestsStream(latestFile: String)(implicit ec: ExecutionContext): Source[(String, Try[List[(String, Try[VoyageManifest])]]), NotUsed] = {
     log.info(s"Requesting DQ zip files > ${latestFile.take(20)}")
+    val isNewer: String => Boolean = filterNewer(latestFile)
     filesAsSource
-      .filter(f => filterNewer(latestFile)(f))
-      .mapAsync(2) { fileName =>
-        val zipInputStream = inputStream(fileName)
-        val shortFileName = fileName.split("/").reverse.head
+      .map { fullPath =>
+        val fileName = fullPath.split("/").reverse.head
+        (fullPath, fileName)
+      }
+      .filter { case (fullPath, fileName) => isNewer(fileName) }
+      .mapAsync(2) { case (fullPath, fileName) =>
+        val zipInputStream = inputStream(fullPath)
 
-        log.info(s"Processing $shortFileName")
+        log.info(s"Processing $fileName")
 
-        Future((shortFileName, tryJsonContent(zipInputStream)))
+        Future((fileName, tryJsonContent(zipInputStream)))
           .map { case (zipFileName, jsons) => (zipFileName, jsonsOrManifests(jsons)) }
       }
   }
