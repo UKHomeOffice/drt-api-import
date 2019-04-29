@@ -3,10 +3,10 @@ package advancepassengerinfo.importer.provider
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.zip.ZipInputStream
 
+import advancepassengerinfo.importer.parser.JsonManifestParser
+import advancepassengerinfo.manifests.VoyageManifest
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import advancepassengerinfo.importer.manifests.VoyageManifestParser
-import advancepassengerinfo.importer.manifests.VoyageManifestParser.VoyageManifest
 import com.typesafe.scalalogging.Logger
 
 import scala.collection.mutable.ArrayBuffer
@@ -51,7 +51,7 @@ trait ApiProviderLike {
   def jsonsOrManifests(tryJsonManifests: Try[List[(String, String)]]): Try[List[(String, Try[VoyageManifest])]] = tryJsonManifests
     .map { jsonManifests =>
       jsonManifests.map {
-        case (jsonFile, json) => (jsonFile, VoyageManifestParser.parseVoyagePassengerInfo(json))
+        case (jsonFile, json) => (jsonFile, JsonManifestParser.parseVoyagePassengerInfo(json))
       }
     }
 

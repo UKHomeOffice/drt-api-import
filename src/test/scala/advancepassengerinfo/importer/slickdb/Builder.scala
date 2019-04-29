@@ -1,21 +1,21 @@
 package advancepassengerinfo.importer.slickdb
 
-import advancepassengerinfo.importer.H2Db
-import advancepassengerinfo.importer.H2Db.H2Tables
+import advancepassengerinfo.importer.InMemoryDatabase
 import org.scalatest.{BeforeAndAfterEach, Suite}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 
 trait Builder extends BeforeAndAfterEach {
   this: Suite =>
 
-  import advancepassengerinfo.importer.H2Db.tables.profile.api._
+  import advancepassengerinfo.importer.InMemoryDatabase.tables.profile.api._
 
   override def beforeEach(): Unit = {
-    Await.ready(H2Db.con.run(H2Tables.schema.drop), 1 second)
-    Await.ready(H2Db.con.run(H2Tables.schema.create), 1 second)
+    Await.ready(InMemoryDatabase.con.run(InMemoryDatabase.tables.schema.drop), 1 second)
+    Await.ready(InMemoryDatabase.con.run(InMemoryDatabase.tables.schema.create), 1 second)
     super.beforeEach()
   }
 

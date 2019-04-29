@@ -2,16 +2,16 @@ package advancepassengerinfo.importer.persistence
 
 import java.sql.Timestamp
 
+import advancepassengerinfo.importer.Db
+import advancepassengerinfo.importer.slickdb.VoyageManifestPassengerInfoTable
+import advancepassengerinfo.manifests.VoyageManifest
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import advancepassengerinfo.importer.Db
-import advancepassengerinfo.importer.manifests.VoyageManifestParser.VoyageManifest
-import advancepassengerinfo.importer.slickdb.VoyageManifestPassengerInfoTable
 import drtlib.SDate
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}

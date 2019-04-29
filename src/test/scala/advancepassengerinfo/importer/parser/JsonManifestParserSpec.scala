@@ -1,12 +1,12 @@
-package advancepassengerinfo.importer.manifests
+package advancepassengerinfo.importer.parser
 
-import advancepassengerinfo.importer.manifests.VoyageManifestParser.{PassengerInfoJson, VoyageManifest}
+import advancepassengerinfo.manifests.{PassengerInfo, VoyageManifest}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.util.{Failure, Success}
 
-class VoyageManifestParserSpec extends FlatSpec with Matchers {
-  val validJsonManifest =
+class JsonManifestParserSpec extends FlatSpec with Matchers {
+  val validJsonManifest: String =
     """
       |{
       |  "EventCode": "DC",
@@ -57,17 +57,17 @@ class VoyageManifestParserSpec extends FlatSpec with Matchers {
   val invalidJsonManifest = """{}"""
 
   "A valid json manifest" should "give a valid VoyageManifest" in {
-    val vmTry = VoyageManifestParser.parseVoyagePassengerInfo(validJsonManifest)
+    val vmTry = JsonManifestParser.parseVoyagePassengerInfo(validJsonManifest)
 
     val expected = Success(VoyageManifest("DC","STN","BRE","3631","FR","2016-03-02","07:30:00",List(
-      PassengerInfoJson(Some("P"),"MAR","",Some("21"),Some("STN"),"N",Some("GBR"),Some("MAR"),None),
-      PassengerInfoJson(Some("G"),"","",Some("43"),Some("STN"),"N",Some("GBR"),Some(""),None))))
+      PassengerInfo(Some("P"),"MAR","",Some("21"),Some("STN"),"N",Some("GBR"),Some("MAR"),None),
+      PassengerInfo(Some("G"),"","",Some("43"),Some("STN"),"N",Some("GBR"),Some(""),None))))
 
     vmTry should be (expected)
   }
 
   "An invalid json manifest" should "give a Failure" in {
-    val isFailure = VoyageManifestParser.parseVoyagePassengerInfo(invalidJsonManifest) match {
+    val isFailure = JsonManifestParser.parseVoyagePassengerInfo(invalidJsonManifest) match {
       case Failure(_) => true
       case _ => false
     }

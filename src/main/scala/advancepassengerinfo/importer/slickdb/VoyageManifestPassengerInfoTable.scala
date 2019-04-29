@@ -2,8 +2,8 @@ package advancepassengerinfo.importer.slickdb
 
 import java.sql.Timestamp
 
-import advancepassengerinfo.importer.manifests.VoyageManifestParser
-import advancepassengerinfo.importer.manifests.VoyageManifestParser.VoyageManifest
+import advancepassengerinfo.importer.parser.JsonManifestParser
+import advancepassengerinfo.manifests.{PassengerInfo, VoyageManifest}
 import com.typesafe.scalalogging.Logger
 
 import scala.concurrent.ExecutionContext
@@ -27,7 +27,7 @@ case class VoyageManifestPassengerInfoTable(tables: Tables) {
     vm.bestPassengers.map { passenger => passengerRow(vm, dayOfWeek, weekOfYear, schTs, passenger, jsonFile) }
   }
 
-  def passengerRow(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, schTs: Timestamp, p: VoyageManifestParser.PassengerInfoJson, jsonFile: String): tables.VoyageManifestPassengerInfoRow = {
+  def passengerRow(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, schTs: Timestamp, p: PassengerInfo, jsonFile: String): tables.VoyageManifestPassengerInfoRow = {
     VoyageManifestPassengerInfoRow(
       event_code = vm.EventCode,
       arrival_port_code = vm.ArrivalPortCode,

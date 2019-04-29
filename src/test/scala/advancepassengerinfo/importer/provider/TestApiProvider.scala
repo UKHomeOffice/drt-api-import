@@ -1,6 +1,6 @@
 package advancepassengerinfo.importer.provider
 
-import java.io.{File, FileInputStream}
+import java.io.FileInputStream
 import java.util.zip.ZipInputStream
 
 import akka.NotUsed

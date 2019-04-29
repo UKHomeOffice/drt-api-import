@@ -2,7 +2,7 @@ package advancepassengerinfo.importer
 
 import advancepassengerinfo.importer.slickdb.Tables
 
-object H2Db extends Db {
+object InMemoryDatabase extends Db {
 
   object H2Tables extends {
     val profile = slick.jdbc.H2Profile
