@@ -38,7 +38,7 @@ trait ApiProviderLike {
         (fullPath, fileName)
       }
       .filter { case (fullPath, fileName) => isNewer(fileName) }
-      .mapAsync(2) { case (fullPath, fileName) =>
+      .mapAsync(1) { case (fullPath, fileName) =>
         val zipInputStream = inputStream(fullPath)
 
         log.info(s"Processing $fileName")

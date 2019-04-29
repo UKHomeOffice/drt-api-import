@@ -41,7 +41,8 @@ object Main extends App {
   val localImportPath = config.getString("local-import-path")
 
   val provider = providerFromConfig(localImportPath)
-  val persistor = ManifestPersistor(PostgresDb)
+  val parallelism = config.getInt("parallelism")
+  val persistor = ManifestPersistor(PostgresDb, parallelism)
 
   val poller = new ManifestPoller(provider, persistor)
 

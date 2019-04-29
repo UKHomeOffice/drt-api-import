@@ -17,8 +17,9 @@ import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
 
-case class ManifestPersistor(db: Db)(implicit ec: ExecutionContext) {
+case class ManifestPersistor(db: Db, parallelism: Int)(implicit ec: ExecutionContext) {
   val log: Logger = LoggerFactory.getLogger(getClass)
+  log.info(s"parallelism level: $parallelism")
 
   val dqRegex: Regex = "drt_dq_([0-9]{2})([0-9]{2})([0-9]{2})_[0-9]{6}_[0-9]{4}\\.zip".r
 
@@ -54,10 +55,10 @@ case class ManifestPersistor(db: Db)(implicit ec: ExecutionContext) {
             case Some(tuple) => tuple
           }
     }
-    .mapAsync(12) {
+    .mapAsync(parallelism) {
       case (zipFile, jsonFile, vm) => addDowWoy(zipFile, jsonFile, vm)
     }
-    .mapAsync(6) {
+    .mapAsync(parallelism) {
       case (zipFile, jsonFile, vm, dow, woy) =>
         removeExisting(zipFile, jsonFile, vm, dow, woy)
           .flatMap(_ => persistManifest(zipFile, jsonFile, vm, dow, woy))

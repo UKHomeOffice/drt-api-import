@@ -27,7 +27,7 @@ class ApiProviderSpec extends FlatSpec with Matchers with Builder {
 
   val vmTable: VoyageManifestPassengerInfoTable = VoyageManifestPassengerInfoTable(InMemoryDatabase.tables)
   val provider = TestApiProvider()
-  val persistor = ManifestPersistor(InMemoryDatabase)
+  val persistor = ManifestPersistor(InMemoryDatabase, 6)
 
   "A provider with a valid zip containing one json manifest" should "return a success case representation of that processed zip" in {
     val manifestsStream: Source[(String, Try[List[(String, Try[VoyageManifest])]]), NotUsed] = provider.manifestsStream("")

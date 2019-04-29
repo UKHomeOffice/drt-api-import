@@ -27,7 +27,7 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
   import advancepassengerinfo.importer.InMemoryDatabase.tables.profile.api._
 
 
-  val persistor = ManifestPersistor(InMemoryDatabase)
+  val persistor = ManifestPersistor(InMemoryDatabase, 6)
 
   "A request to insert a VoyageManifest" should "result in a row being inserted for each passenger" in {
     val vm = VoyageManifest("DC", "LHR", "JFK", "0123", "BA", "2019-01-01", "12:00", List(
@@ -190,7 +190,7 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
   }
 
   "Persisting a failed zip file" should "result in an entry in the processed_zip table" in {
-    val persistor = ManifestPersistor(InMemoryDatabase)
+    val persistor = ManifestPersistor(InMemoryDatabase, 6)
 
     val zipFile = "someZip"
     val failure: Try[List[(String, Try[VoyageManifest])]] = Failure(new Exception("yeah"))
@@ -207,7 +207,7 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
   }
 
   "Persisting a failed json file" should "result in an entry in the processed_json table" in {
-    val persistor = ManifestPersistor(InMemoryDatabase)
+    val persistor = ManifestPersistor(InMemoryDatabase, 6)
 
     val zipFile = "someJson"
     val jsonFile = "someJson"
