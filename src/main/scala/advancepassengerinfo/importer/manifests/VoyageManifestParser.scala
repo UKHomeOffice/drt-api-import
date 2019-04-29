@@ -1,4 +1,4 @@
-package apiimport.manifests
+package advancepassengerinfo.importer.manifests
 
 import com.typesafe.scalalogging.Logger
 import drtlib.SDate

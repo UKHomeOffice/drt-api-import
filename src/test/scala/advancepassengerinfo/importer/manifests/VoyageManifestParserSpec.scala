@@ -1,6 +1,6 @@
-package apiimport.manifests
+package advancepassengerinfo.importer.manifests
 
-import apiimport.manifests.VoyageManifestParser.{PassengerInfoJson, VoyageManifest}
+import advancepassengerinfo.importer.manifests.VoyageManifestParser.{PassengerInfoJson, VoyageManifest}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.util.{Failure, Success}

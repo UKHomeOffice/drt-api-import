@@ -1,6 +1,6 @@
-package apiimport
+package advancepassengerinfo.importer
 
-import apiimport.slickdb.Tables
+import advancepassengerinfo.importer.slickdb.Tables
 
 object H2Db extends Db {
 

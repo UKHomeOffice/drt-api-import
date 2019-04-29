@@ -1,4 +1,4 @@
-package apiimport.provider
+package advancepassengerinfo.importer.provider
 
 import java.sql.Timestamp
 
@@ -6,11 +6,11 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
-import apiimport.H2Db
-import apiimport.H2Db.H2Tables
-import apiimport.manifests.VoyageManifestParser.{PassengerInfoJson, VoyageManifest}
-import apiimport.persistence.ManifestPersistor
-import apiimport.slickdb.{Builder, VoyageManifestPassengerInfoTable}
+import advancepassengerinfo.importer.H2Db
+import advancepassengerinfo.importer.H2Db.H2Tables
+import advancepassengerinfo.importer.manifests.VoyageManifestParser.{PassengerInfoJson, VoyageManifest}
+import advancepassengerinfo.importer.persistence.ManifestPersistor
+import advancepassengerinfo.importer.slickdb.{Builder, VoyageManifestPassengerInfoTable}
 import drtlib.SDate
 import org.scalatest._
 
@@ -44,7 +44,7 @@ class ApiProviderSpec extends FlatSpec with Matchers with Builder {
   }
 
   "A provider with a single valid manifest with both an iAPI and a non-iAPI passenger" should "result in only the iAPI passenger record being recorded when passed through a persistor" in {
-    import apiimport.H2Db.tables.profile.api._
+    import advancepassengerinfo.importer.H2Db.tables.profile.api._
 
     val manifestsStream: Source[(String, Try[List[(String, Try[VoyageManifest])]]), NotUsed] = provider.manifestsStream("")
 

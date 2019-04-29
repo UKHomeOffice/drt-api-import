@@ -1,14 +1,14 @@
-package apiimport.persistence
+package advancepassengerinfo.importer.persistence
 
 import java.sql.Timestamp
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
-import apiimport.H2Db
-import apiimport.H2Db.H2Tables
-import apiimport.manifests.VoyageManifestParser.{PassengerInfoJson, VoyageManifest}
-import apiimport.slickdb.{Builder, VoyageManifestPassengerInfoTable}
+import advancepassengerinfo.importer.H2Db
+import advancepassengerinfo.importer.H2Db.H2Tables
+import advancepassengerinfo.importer.manifests.VoyageManifestParser.{PassengerInfoJson, VoyageManifest}
+import advancepassengerinfo.importer.slickdb.{Builder, VoyageManifestPassengerInfoTable}
 import org.scalatest._
 
 import scala.concurrent.duration._
@@ -24,7 +24,7 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
 
   val vmTable: VoyageManifestPassengerInfoTable = VoyageManifestPassengerInfoTable(H2Tables)
 
-  import apiimport.H2Db.tables.profile.api._
+  import advancepassengerinfo.importer.H2Db.tables.profile.api._
 
 
   val persistor = ManifestPersistor(H2Db)

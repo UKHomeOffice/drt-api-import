@@ -1,4 +1,4 @@
-package apiimport.slickdb
+package advancepassengerinfo.importer.slickdb
 
 import java.sql.Timestamp
 

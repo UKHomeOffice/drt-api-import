@@ -1,9 +1,9 @@
-package apiimport.slickdb
+package advancepassengerinfo.importer.slickdb
 
 import java.sql.Timestamp
 
-import apiimport.manifests.VoyageManifestParser
-import apiimport.manifests.VoyageManifestParser.VoyageManifest
+import advancepassengerinfo.importer.manifests.VoyageManifestParser
+import advancepassengerinfo.importer.manifests.VoyageManifestParser.VoyageManifest
 import com.typesafe.scalalogging.Logger
 
 import scala.concurrent.ExecutionContext

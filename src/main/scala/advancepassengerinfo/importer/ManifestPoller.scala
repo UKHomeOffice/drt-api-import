@@ -1,11 +1,11 @@
-package apiimport
+package advancepassengerinfo.importer
 
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
-import apiimport.persistence.ManifestPersistor
-import apiimport.provider.ApiProviderLike
+import advancepassengerinfo.importer.persistence.ManifestPersistor
+import advancepassengerinfo.importer.provider.ApiProviderLike
 import com.typesafe.scalalogging.Logger
 
 import scala.collection.immutable

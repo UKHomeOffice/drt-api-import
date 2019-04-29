@@ -1,9 +1,9 @@
-package apiimport.slickdb
+package advancepassengerinfo.importer.slickdb
 
 import java.sql.Timestamp
 
-import apiimport.H2Db
-import apiimport.H2Db.H2Tables
+import advancepassengerinfo.importer.H2Db
+import advancepassengerinfo.importer.H2Db.H2Tables
 import drtlib.SDate
 import org.scalatest._
 

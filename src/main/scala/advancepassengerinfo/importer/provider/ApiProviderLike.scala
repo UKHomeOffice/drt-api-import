@@ -1,12 +1,12 @@
-package apiimport.provider
+package advancepassengerinfo.importer.provider
 
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.zip.ZipInputStream
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import apiimport.manifests.VoyageManifestParser
-import apiimport.manifests.VoyageManifestParser.VoyageManifest
+import advancepassengerinfo.importer.manifests.VoyageManifestParser
+import advancepassengerinfo.importer.manifests.VoyageManifestParser.VoyageManifest
 import com.typesafe.scalalogging.Logger
 
 import scala.collection.mutable.ArrayBuffer

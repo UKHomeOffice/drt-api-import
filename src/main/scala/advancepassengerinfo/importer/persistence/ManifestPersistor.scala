@@ -1,12 +1,12 @@
-package apiimport.persistence
+package advancepassengerinfo.importer.persistence
 
 import java.sql.Timestamp
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import apiimport.Db
-import apiimport.manifests.VoyageManifestParser.VoyageManifest
-import apiimport.slickdb.VoyageManifestPassengerInfoTable
+import advancepassengerinfo.importer.Db
+import advancepassengerinfo.importer.manifests.VoyageManifestParser.VoyageManifest
+import advancepassengerinfo.importer.slickdb.VoyageManifestPassengerInfoTable
 import drtlib.SDate
 import org.slf4j.{Logger, LoggerFactory}
 

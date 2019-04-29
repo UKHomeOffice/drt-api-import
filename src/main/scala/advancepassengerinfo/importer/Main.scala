@@ -1,10 +1,10 @@
-package apiimport
+package advancepassengerinfo.importer
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import apiimport.PostgresTables.profile
-import apiimport.persistence.ManifestPersistor
-import apiimport.provider.{ApiProviderLike, LocalApiProvider, S3ApiProvider}
+import advancepassengerinfo.importer.PostgresTables.profile
+import advancepassengerinfo.importer.persistence.ManifestPersistor
+import advancepassengerinfo.importer.provider.{ApiProviderLike, LocalApiProvider, S3ApiProvider}
 import com.amazonaws.auth.AWSCredentials
 import com.typesafe.config.ConfigFactory
 import slick.jdbc.PostgresProfile
@@ -41,14 +41,15 @@ object Main extends App {
   val localImportPath = config.getString("local-import-path")
 
   val provider = providerFromConfig(localImportPath)
+  val persistor = ManifestPersistor(PostgresDb)
 
-  val poller = new ManifestPoller(provider, ManifestPersistor(PostgresDb))
+  val poller = new ManifestPoller(provider, persistor)
 
   poller.startPollingForManifests()
 }
 
 trait Db {
-  val tables: apiimport.slickdb.Tables
+  val tables: advancepassengerinfo.importer.slickdb.Tables
   val con: tables.profile.backend.Database
 }
 

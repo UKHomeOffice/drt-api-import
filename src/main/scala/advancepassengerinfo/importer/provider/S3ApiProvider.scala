@@ -1,4 +1,4 @@
-package apiimport.provider
+package advancepassengerinfo.importer.provider
 
 import java.io.InputStream
 import java.util.zip.ZipInputStream
