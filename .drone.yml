@@ -1,0 +1,42 @@
+pipeline:
+
+  sonar-scanner:
+    image: quay.io/ukhomeofficedigital/sonar-scanner:v3.0.1
+    when:
+      event:
+        - push
+      branch:
+        - ${DRONE_BRANCH}
+
+  build:
+    image: quay.io/ukhomeofficedigital/scala-sbt-nodejs
+    commands:
+      - /root/entrypoint.sh
+      - sbt --error test docker:stage
+    environment:
+#      - ENV_LOG_LEVEL=ERROR
+#      - ARTIFACTORY_USERNAME=drt_ci
+#    secrets:
+#      - ARTIFACTORY_PASSWORD
+#      - KEYTOOL_PASSWORD
+    when:
+      event:
+        - push
+      branch:
+        - ${DRONE_BRANCH}
+
+#  build_docker:
+#    environment:
+#      - DOCKER_USERNAME=drt_ci
+#      - DOCKER_HOST=tcp://172.17.0.1:2375
+#    image: quay.io/ukhomeofficedigital/drone-docker
+#    registry: docker.digital.homeoffice.gov.uk
+#    repo: docker.digital.homeoffice.gov.uk/drt/drt
+#    secrets: [ docker_password ]
+#    tags:
+#      - ${DRONE_BUILD_NUMBER}
+#      - latest
+#    when:
+#      event: push
+#      branch:
+#        - ${DRONE_BRANCH}
