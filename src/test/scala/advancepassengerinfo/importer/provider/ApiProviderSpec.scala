@@ -47,7 +47,7 @@ class ApiProviderSpec extends FlatSpec with Matchers with Builder {
 
     val manifestsStream: Source[(String, Try[List[(String, Try[VoyageManifest])]]), NotUsed] = provider.manifestsStream("")
 
-    Await.ready(persistor.addPersistence(manifestsStream).runWith(Sink.seq), 1 second)
+    Await.ready(persistor.addPersistenceToStream(manifestsStream).runWith(Sink.seq), 1 second)
 
     val paxEntries = InMemoryDatabase.tables.VoyageManifestPassengerInfo.result
     val paxRows = Await.result(InMemoryDatabase.con.run(paxEntries), 1 second)

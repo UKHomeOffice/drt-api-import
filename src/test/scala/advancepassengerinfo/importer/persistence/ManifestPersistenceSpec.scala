@@ -63,7 +63,7 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
     val zipFile = "someZip"
     val manifestSource = Source(List((zipFile, Success(List((jsonFile, Success(vm)))))))
 
-    Await.ready(persistor.addPersistence(manifestSource).runWith(Sink.seq), 1 second)
+    Await.ready(persistor.addPersistenceToStream(manifestSource).runWith(Sink.seq), 1 second)
 
     val paxEntries = InMemoryDatabase.tables.VoyageManifestPassengerInfo.result
     val paxRows = Await.result(InMemoryDatabase.con.run(paxEntries), 1 second)
@@ -97,7 +97,7 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
     val zipFile = "someZip"
     val manifestSource = Source(List((zipFile, Success(List((jsonFile, Success(vm)), (jsonFile, Success(vm2)))))))
 
-    Await.ready(persistor.addPersistence(manifestSource).runWith(Sink.seq), 1 second)
+    Await.ready(persistor.addPersistenceToStream(manifestSource).runWith(Sink.seq), 1 second)
 
     val paxEntries = InMemoryDatabase.tables.VoyageManifestPassengerInfo.result
     val result = Await.result(InMemoryDatabase.con.run(paxEntries), 1 second)
@@ -123,8 +123,8 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
     val manifestSource = Source(List((zipFile, Success(List((jsonFile, Success(vm)))))))
     val manifestSource2 = Source(List((zipFile, Success(List((jsonFile, Success(vm2)))))))
 
-    Await.ready(persistor.addPersistence(manifestSource).runWith(Sink.seq), 1 second)
-    Await.ready(persistor.addPersistence(manifestSource2).runWith(Sink.seq), 1 second)
+    Await.ready(persistor.addPersistenceToStream(manifestSource).runWith(Sink.seq), 1 second)
+    Await.ready(persistor.addPersistenceToStream(manifestSource2).runWith(Sink.seq), 1 second)
 
     val paxEntries = InMemoryDatabase.tables.VoyageManifestPassengerInfo.result
     val result = Await.result(InMemoryDatabase.con.run(paxEntries), 1 second)
@@ -150,8 +150,8 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
     val manifestSource = Source(List((zipFile, Success(List((jsonFile, Success(vmDc)))))))
     val manifestSource2 = Source(List((zipFile, Success(List((jsonFile, Success(vmCi)))))))
 
-    Await.ready(persistor.addPersistence(manifestSource).runWith(Sink.seq), 1 second)
-    Await.ready(persistor.addPersistence(manifestSource2).runWith(Sink.seq), 1 second)
+    Await.ready(persistor.addPersistenceToStream(manifestSource).runWith(Sink.seq), 1 second)
+    Await.ready(persistor.addPersistenceToStream(manifestSource2).runWith(Sink.seq), 1 second)
 
     val paxEntries = InMemoryDatabase.tables.VoyageManifestPassengerInfo.result
     val result = Await.result(InMemoryDatabase.con.run(paxEntries), 1 second)
@@ -177,7 +177,7 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
     val zipFile = "someZip"
     val manifestSource = Source(List((zipFile, Success(List((jsonFile, Success(vmDc)))))))
 
-    Await.ready(persistor.addPersistence(manifestSource).runWith(Sink.seq), 1 second)
+    Await.ready(persistor.addPersistenceToStream(manifestSource).runWith(Sink.seq), 1 second)
 
     val paxEntries = InMemoryDatabase.tables.VoyageManifestPassengerInfo.result
     val result = Await.result(InMemoryDatabase.con.run(paxEntries), 1 second)
@@ -196,7 +196,7 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
     val failure: Try[List[(String, Try[VoyageManifest])]] = Failure(new Exception("yeah"))
     val manifestSource = Source(List((zipFile, failure)))
 
-    Await.ready(persistor.addPersistence(manifestSource).runWith(Sink.seq), 1 second)
+    Await.ready(persistor.addPersistenceToStream(manifestSource).runWith(Sink.seq), 1 second)
 
     val zipEntries = InMemoryDatabase.tables.ProcessedZip.result
     val zipRowsAsTuple = Await.result(InMemoryDatabase.con.run(zipEntries), 1 second).map(r => (r.zip_file_name, r.success))
@@ -214,7 +214,7 @@ class ManifestPersistenceSpec extends FlatSpec with Matchers with Builder {
     val failure: Try[VoyageManifest] = Failure(new Exception("yeah"))
     val manifestSource = Source(List((zipFile, Success(List((jsonFile, failure))))))
 
-    Await.ready(persistor.addPersistence(manifestSource).runWith(Sink.seq), 1 second)
+    Await.ready(persistor.addPersistenceToStream(manifestSource).runWith(Sink.seq), 1 second)
 
     val jsonEntries = InMemoryDatabase.tables.ProcessedJson.result
     val jsonRowsAsTuple = Await.result(InMemoryDatabase.con.run(jsonEntries), 1 second).map(r => (r.zip_file_name, r.json_file_name, r.suspicious_date, r.success))

@@ -26,7 +26,7 @@ class ManifestPoller(provider: ApiProviderLike, persistor: ManifestPersistor)
         }
         .flatMap { lpf =>
           persistor
-            .addPersistence(provider.manifestsStream(lpf))
+            .addPersistenceToStream(provider.manifestsStream(lpf))
             .runWith(Sink.seq)
         }
         .recover {

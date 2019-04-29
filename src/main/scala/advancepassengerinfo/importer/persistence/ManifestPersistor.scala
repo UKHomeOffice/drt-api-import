@@ -34,7 +34,7 @@ case class ManifestPersistor(db: Db, parallelism: Int)(implicit ec: ExecutionCon
 
   val oneDayMillis: Long = 60 * 60 * 24 * 1000L
 
-  def addPersistence(zipTries: Source[(String, Try[List[(String, Try[VoyageManifest])]]), NotUsed]): Source[Int, NotUsed] = zipTries
+  def addPersistenceToStream(zipTries: Source[(String, Try[List[(String, Try[VoyageManifest])]]), NotUsed]): Source[Int, NotUsed] = zipTries
     .mapConcat {
       case (zipFile, Failure(t)) =>
         log.error(s"Recording a failed zip", t)
