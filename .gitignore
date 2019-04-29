@@ -1,2 +1,23 @@
 *.class
 *.log
+.~*
+.#*
+*.DS_Store
+
+# sbt specific
+.sbtopts
+.cache/
+.history/
+.lib/
+dist/*
+target/
+lib_managed/
+src_managed/
+project/
+
+# IntelliJ IDEA
+.idea
+*.iml
+out
+*.sc
+
