@@ -21,7 +21,7 @@ case class S3ApiProvider(awsCredentials: AWSCredentials, bucketName: String)(imp
   val config: Config = actorSystem.settings.config
 
   def filesAsSource: Source[String, NotUsed] = s3Client.
-    listFilesAsStream(bucketName) //, Option("drt_dq_190417"))
+    listFilesAsStream(bucketName)
     .map(_.getKey)
 
   def inputStream(fileName: String): ZipInputStream = {

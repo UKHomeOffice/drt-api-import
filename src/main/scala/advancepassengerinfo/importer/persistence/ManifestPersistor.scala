@@ -56,7 +56,7 @@ case class ManifestPersistor(db: Db, parallelism: Int)(implicit ec: ExecutionCon
           }
     }
     .mapAsync(parallelism) {
-      case (zipFile, jsonFile, vm) => addDowWoy(zipFile, jsonFile, vm)
+      case (zipFile, jsonFile, vm) => addDayOfWeekAndWeekOfyear(zipFile, jsonFile, vm)
     }
     .mapAsync(parallelism) {
       case (zipFile, jsonFile, vm, dow, woy) =>
@@ -116,7 +116,7 @@ case class ManifestPersistor(db: Db, parallelism: Int)(implicit ec: ExecutionCon
     })
   }
 
-  def addDowWoy(zipFile: String, jsonFile: String, vm: VoyageManifest): Future[(String, String, VoyageManifest, Int, Int)] = {
+  def addDayOfWeekAndWeekOfyear(zipFile: String, jsonFile: String, vm: VoyageManifest): Future[(String, String, VoyageManifest, Int, Int)] = {
     val schTs = new Timestamp(vm.scheduleArrivalDateTime.map(_.millisSinceEpoch).getOrElse(0L))
 
     con.run(manifestTable.dayOfWeekAndWeekOfYear(schTs)).collect {
