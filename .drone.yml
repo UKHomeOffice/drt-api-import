@@ -9,21 +9,33 @@ pipeline:
         - ${DRONE_BRANCH}
 
   build:
-    image: quay.io/ukhomeofficedigital/scala-sbt-nodejs
+    image: quay.io/ukhomeofficedigital/scala-sbt:v0.4.0
     commands:
       - /root/entrypoint.sh
       - sbt --error test docker:stage
     environment:
-#      - ENV_LOG_LEVEL=ERROR
-#      - ARTIFACTORY_USERNAME=drt_ci
-#    secrets:
-#      - ARTIFACTORY_PASSWORD
-#      - KEYTOOL_PASSWORD
+      - ENV_LOG_LEVEL=ERROR
+      - ARTIFACTORY_USERNAME=drt_ci
+    secrets:
+      - ARTIFACTORY_PASSWORD
+      - KEYTOOL_PASSWORD
     when:
       event:
         - push
       branch:
         - ${DRONE_BRANCH}
+
+  build_push_to_ecr:
+    image: quay.io/ukhomeofficedigital/ecr:latest
+    secrets:
+    - AWS_ACCESS_KEY_ID
+    - AWS_SECRET_ACCESS_KEY
+    repo: 340268328991.dkr.ecr.eu-west-2.amazonaws.com/drt/drt-api-import
+    build_args:
+    - APP_BUILD=${DRONE_COMMIT_SHA}
+    tags:
+    - latest
+    - ${DRONE_COMMIT_SHA}
 
 #  build_docker:
 #    environment:
