@@ -11,18 +11,17 @@ pipeline:
   build:
     image: quay.io/ukhomeofficedigital/scala-sbt:v1.2.8
     commands:
-      - /root/entrypoint.sh
-      - sbt docker:stage
+    - /root/entrypoint.sh
+    - sbt docker:stage
     environment:
-      - ARTIFACTORY_USERNAME=drt_ci
+    - ARTIFACTORY_USERNAME=drt_drone
     secrets:
-      - ARTIFACTORY_PASSWORD
-      - KEYTOOL_PASSWORD
+    - ARTIFACTORY_PASSWORD
     when:
       event:
-        - push
+      - push
       branch:
-        - ${DRONE_BRANCH}
+      - ${DRONE_BRANCH}
 
   build_push_to_ecr:
     image: quay.io/ukhomeofficedigital/ecr:latest
