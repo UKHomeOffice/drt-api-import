@@ -28,3 +28,4 @@ lazy val root = (project in file("."))
     parallelExecution in Test := false
   )
   .enablePlugins(DockerPlugin)
+  .enablePlugins(AshScriptPlugin)
