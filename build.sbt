@@ -27,3 +27,4 @@ lazy val root = (project in file("."))
     )).value,
     parallelExecution in Test := false
   )
+  .enablePlugins(DockerPlugin)
