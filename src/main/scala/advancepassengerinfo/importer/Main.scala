@@ -1,5 +1,7 @@
 package advancepassengerinfo.importer
 
+import java.util.TimeZone
+
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import advancepassengerinfo.importer.PostgresTables.profile
@@ -22,6 +24,13 @@ object Main extends App {
   implicit val actorSystem: ActorSystem = ActorSystem("api-data-import")
   implicit val ec: ExecutionContextExecutor = ExecutionContext.global
   implicit val materializer: ActorMaterializer = ActorMaterializer()
+
+  def defaultTimeZone: String = TimeZone.getDefault.getID
+
+  def systemTimeZone: String = System.getProperty("user.timezone")
+
+  assert(systemTimeZone == "UTC", "System Timezone is not set to UTC")
+  assert(defaultTimeZone == "UTC", "Default Timezone is not set to UTC")
 
   def providerFromConfig(localImportPath: String): ApiProviderLike = {
     if (localImportPath.nonEmpty)
