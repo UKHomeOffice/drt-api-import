@@ -10,4 +10,4 @@ RUN rm -rf /var/cache/apk/*
 
 USER 1000
 
-ENTRYPOINT ["bin/drt-api-import", "-Duser.timezone=UTC"]
+ENTRYPOINT ["bin/drt-api-import"]
