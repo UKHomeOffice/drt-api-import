@@ -16,12 +16,12 @@ import com.typesafe.scalalogging.Logger
 import scala.concurrent.ExecutionContext
 
 
-case class S3ApiProvider(awsCredentials: AWSCredentials, bucketName: String)(implicit actorSystem: ActorSystem, materializer: Materializer, executionContext: ExecutionContext) extends ApiProviderLike {
+case class S3ApiProvider(awsCredentials: AWSCredentials, bucketName: String, filesPrefix: String)(implicit actorSystem: ActorSystem, materializer: Materializer, executionContext: ExecutionContext) extends ApiProviderLike {
   val log = Logger(getClass)
   val config: Config = actorSystem.settings.config
 
   def filesAsSource: Source[String, NotUsed] = s3Client.
-    listFilesAsStream(bucketName)
+    listFilesAsStream(bucketName, Option(filesPrefix))
     .map(_.getKey)
 
   def inputStream(fileName: String): ZipInputStream = {

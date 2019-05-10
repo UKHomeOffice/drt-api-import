@@ -37,13 +37,14 @@ object Main extends App {
       LocalApiProvider(localImportPath)
     else {
       val bucketName = config.getString("s3.api-data.bucket-name")
+      val filesPrefix = config.getString("s3.api-data.files_prefix")
       val awsCredentials: AWSCredentials = new AWSCredentials {
         override def getAWSAccessKeyId: String = config.getString("s3.api-data.credentials.access_key_id")
 
         override def getAWSSecretKey: String = config.getString("s3.api-data.credentials.secret_key")
       }
 
-      S3ApiProvider(awsCredentials, bucketName)
+      S3ApiProvider(awsCredentials, bucketName, filesPrefix)
     }
   }
 
