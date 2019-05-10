@@ -8,7 +8,7 @@ RUN ["chown", "-R", "1000:1000", "."]
 RUN apk --update add bash less curl
 RUN rm -rf /var/cache/apk/*
 
-RUN mkdir -p /etc/drt
+RUN mkdir -p /home/drt-admin/.postgresql
 RUN curl https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem > /home/drt-admin/.postgresql/root.crt
 
 #RUN keytool -noprompt -storepass changeit -import -alias rds -keystore $JAVA_HOME/jre/lib/security/cacerts -file /etc/drt/rds-combined-ca-bundle.pem
