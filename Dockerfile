@@ -5,7 +5,7 @@ RUN adduser -D -u 1000 drt-admin
 
 RUN ["chown", "-R", "1000:1000", "."]
 
-RUN apk --update add bash less curl
+RUN apk --update add bash less curl openssl
 RUN rm -rf /var/cache/apk/*
 
 RUN mkdir -p /etc/drt
