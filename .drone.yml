@@ -3,7 +3,7 @@ pipeline:
   sonar-scanner:
     image: quay.io/ukhomeofficedigital/sonar-scanner:v3.0.1
     when:
-      event: [ push ]
+      event: push
       branch: [ ${DRONE_BRANCH} ]
 
   build:
