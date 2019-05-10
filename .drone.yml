@@ -7,7 +7,8 @@ pipeline:
       branch: ${DRONE_BRANCH}
 
   build:
-    image: quay.io/ukhomeofficedigital/scala-sbt:v1.2.8
+#    image: quay.io/ukhomeofficedigital/scala-sbt:v1.2.8
+    image: quay.io/ukhomeofficedigital/scala-sbt:latest
     commands:
     - /root/entrypoint.sh
     - sbt docker:stage
