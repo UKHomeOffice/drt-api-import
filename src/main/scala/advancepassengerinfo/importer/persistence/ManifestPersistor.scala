@@ -38,15 +38,15 @@ case class ManifestPersistor(db: Db, parallelism: Int)(implicit ec: ExecutionCon
     .mapConcat {
       case (zipFile, Failure(t)) =>
         log.error(s"Recording a failed zip", t)
-        Await.ready(persistProcessedZipRecord(zipFile, success = false), 1 second)
+        Await.ready(persistProcessedZipRecord(zipFile, success = false), 5 second)
         List()
       case (zipFile, Success(manifestTries)) =>
-        Await.ready(persistProcessedZipRecord(zipFile, success = true), 1 second)
+        Await.ready(persistProcessedZipRecord(zipFile, success = true), 5 second)
         manifestTries
           .map {
             case (jsonFile, Failure(t)) =>
               log.error(s"Recording a failed json file", t)
-              Await.ready(persistFailedJsonRecord(zipFile, jsonFile), 1 second)
+              Await.ready(persistFailedJsonRecord(zipFile, jsonFile), 5 second)
               None
             case (jsonFile, Success(manifest)) =>
               Option(zipFile, jsonFile, manifest)
