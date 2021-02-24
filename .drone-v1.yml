@@ -9,22 +9,6 @@ platform:
 
 steps:
 
-- name: drone-s3-cache-pull
-  pull: if-not-exists
-  image: quay.io/ukhomeofficedigital/drone-s3cache:v0.2.0
-  settings:
-    drone-s3-cache-mode: pull
-  environment:
-    DRONE_S3_CACHE_AWS_ACCESS_KEY_ID:
-      from_secret: DRONE_S3_CACHE_AWS_ACCESS_KEY_ID
-    DRONE_S3_CACHE_AWS_SECRET_ACCESS_KEY:
-      from_secret: DRONE_S3_CACHE_AWS_SECRET_ACCESS_KEY
-    DRONE_S3_CACHE_BUCKET_NAME:
-      from_secret: DRONE_S3_CACHE_BUCKET_NAME
-  when:
-    event:
-      - push
-
 - name: build
   pull: if-not-exists
   image: quay.io/ukhomeofficedigital/scala-sbt:latest
@@ -40,28 +24,6 @@ steps:
       - ${DRONE_BRANCH}
     event:
       - push
-  depends_on:
-    - drone-s3-cache-pull
-
-- name: drone-s3-cache-push
-  pull: if-not-exists
-  image: quay.io/ukhomeofficedigital/drone-s3cache:v0.2.0
-  settings:
-    drone-s3-cache-folders:
-      - ./.ivy2
-    drone-s3-cache-mode: push
-  environment:
-    DRONE_S3_CACHE_AWS_ACCESS_KEY_ID:
-      from_secret: DRONE_S3_CACHE_AWS_ACCESS_KEY_ID
-    DRONE_S3_CACHE_AWS_SECRET_ACCESS_KEY:
-      from_secret: DRONE_S3_CACHE_AWS_SECRET_ACCESS_KEY
-    DRONE_S3_CACHE_BUCKET_NAME:
-      from_secret: DRONE_S3_CACHE_BUCKET_NAME
-  when:
-    event:
-      - push
-  depends_on:
-    - build
 
 - name: publish
   image: plugins/ecr
