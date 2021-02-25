@@ -16,9 +16,12 @@ steps:
     - /root/entrypoint.sh
     - sbt docker:stage
   environment:
+#    ARTIFACTORY_PASSWORD:
+#      from_secret: ARTIFACTORY_PASSWORD
+#    ARTIFACTORY_USERNAME: drt_drone
     ARTIFACTORY_PASSWORD:
-      from_secret: ARTIFACTORY_PASSWORD
-    ARTIFACTORY_USERNAME: drt_drone
+      from_secret: ARTIFACTORY_TOKEN
+    ARTIFACTORY_USERNAME: drt_artifactory_drone
   when:
     branch:
       - ${DRONE_BRANCH}
