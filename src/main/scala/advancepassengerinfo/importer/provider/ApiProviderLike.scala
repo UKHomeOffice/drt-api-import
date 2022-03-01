@@ -1,16 +1,15 @@
 package advancepassengerinfo.importer.provider
 
-import java.nio.charset.StandardCharsets.UTF_8
-import java.util.zip.ZipInputStream
-
 import advancepassengerinfo.importer.parser.JsonManifestParser
 import advancepassengerinfo.manifests.VoyageManifest
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.typesafe.scalalogging.Logger
 
+import java.nio.charset.StandardCharsets.UTF_8
+import java.util.zip.ZipInputStream
 import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 import scala.util.Try
 import scala.util.matching.Regex
 
@@ -22,14 +21,17 @@ trait ApiProviderLike {
 
   def inputStream(file: String): ZipInputStream
 
-  def filterNewer(latestFile: String)(fileName: String): Boolean = fileName >= filterFromFileName(latestFile) && fileName != latestFile
+  def filterNewer(latestFile: String)
+                 (fileName: String): Boolean =
+    fileName >= filterFromFileName(latestFile) && fileName != latestFile
 
   def filterFromFileName(latestFile: String): String = latestFile match {
     case dqRegex(dateTime, _) => dateTime
     case _ => latestFile
   }
 
-  def manifestsStream(latestFile: String)(implicit ec: ExecutionContext): Source[(String, Try[List[(String, Try[VoyageManifest])]]), NotUsed] = {
+  def manifestsStream(latestFile: String)
+                     (implicit ec: ExecutionContext): Source[(String, Try[List[(String, Try[VoyageManifest])]]), NotUsed] = {
     log.info(s"Requesting DQ zip files > ${latestFile.take(20)}")
     val isNewer: String => Boolean = filterNewer(latestFile)
     filesAsSource
@@ -37,14 +39,13 @@ trait ApiProviderLike {
         val fileName = fullPath.split("/").reverse.head
         (fullPath, fileName)
       }
-      .filter { case (fullPath, fileName) => isNewer(fileName) }
-      .mapAsync(1) { case (fullPath, fileName) =>
+      .filter { case (_, fileName) => isNewer(fileName) }
+      .map { case (fullPath, fileName) =>
         val zipInputStream = inputStream(fullPath)
 
         log.info(s"Processing $fileName")
 
-        Future((fileName, tryJsonContent(zipInputStream)))
-          .map { case (zipFileName, jsons) => (zipFileName, jsonsOrManifests(jsons)) }
+        (fileName, jsonsOrManifests(tryJsonContent(zipInputStream)))
       }
   }
 
@@ -56,11 +57,8 @@ trait ApiProviderLike {
     }
 
   def fileNameAndContentFromZip[X](zipFileName: String,
-                                   zipInputStream: ZipInputStream): (String, Try[List[(String, String)]]) = {
-    val jsonContents = tryJsonContent(zipInputStream)
-
-    (zipFileName, jsonContents)
-  }
+                                   zipInputStream: ZipInputStream): (String, Try[List[(String, String)]]) =
+    (zipFileName, tryJsonContent(zipInputStream))
 
   def tryJsonContent[X](zipInputStream: ZipInputStream): Try[List[(String, String)]] = Try {
     Stream

@@ -59,9 +59,7 @@ case class ManifestPersistor(db: Db, parallelism: Int)(implicit ec: ExecutionCon
       case (zipFile, jsonFile, vm) => addDayOfWeekAndWeekOfyear(zipFile, jsonFile, vm)
     }
     .mapAsync(parallelism) {
-      case (zipFile, jsonFile, vm, dow, woy) =>
-        removeExisting(zipFile, jsonFile, vm, dow, woy)
-          .flatMap(_ => persistManifest(zipFile, jsonFile, vm, dow, woy))
+      case (zipFile, jsonFile, vm, dow, woy) => persistManifest(zipFile, jsonFile, vm, dow, woy)
     }
 
   val con: db.tables.profile.backend.DatabaseDef = db.con
@@ -100,27 +98,13 @@ case class ManifestPersistor(db: Db, parallelism: Int)(implicit ec: ExecutionCon
     maybeSuspiciousDate.getOrElse(false)
   }
 
-  def removeExisting(zf: String, jf: String, vm: VoyageManifest, dow: Int, woy: Int): Future[(String, String, VoyageManifest, Int, Int)] = {
-    val schTs = new Timestamp(vm.scheduleArrivalDateTime.map(_.millisSinceEpoch).getOrElse(0L))
-    val value = db.tables.VoyageManifestPassengerInfo.filter(r => {
-      r.event_code === vm.EventCode &&
-        r.arrival_port_code === vm.ArrivalPortCode &&
-        r.departure_port_code === vm.DeparturePortCode &&
-        r.scheduled_date === schTs &&
-        r.voyage_number === vm.VoyageNumber.toInt
-    })
-
-    con.run(value.delete).map(deletedCount => {
-      if (deletedCount > 0) log.info(s"Removed $deletedCount existing entries")
-      (zf, jf, vm, dow, woy)
-    })
-  }
-
   def addDayOfWeekAndWeekOfyear(zipFile: String, jsonFile: String, vm: VoyageManifest): Future[(String, String, VoyageManifest, Int, Int)] = {
     val schTs = new Timestamp(vm.scheduleArrivalDateTime.map(_.millisSinceEpoch).getOrElse(0L))
 
     con.run(manifestTable.dayOfWeekAndWeekOfYear(schTs)).collect {
-      case Some((dow, woy)) => (zipFile, jsonFile, vm, dow, woy)
+      case Some((dow, woy)) =>
+        println(s"got dow: $dow for ${SDate(schTs.getTime).toISOString()}")
+        (zipFile, jsonFile, vm, dow, woy)
     }
   }
 
