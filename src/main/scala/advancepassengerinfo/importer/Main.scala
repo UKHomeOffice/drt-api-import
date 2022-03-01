@@ -1,16 +1,15 @@
 package advancepassengerinfo.importer
 
 import java.util.TimeZone
-
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import advancepassengerinfo.importer.PostgresTables.profile
 import advancepassengerinfo.importer.persistence.ManifestPersistor
 import advancepassengerinfo.importer.provider.{ApiProviderLike, LocalApiProvider, S3ApiProvider}
-import com.amazonaws.auth.AWSCredentials
 import com.typesafe.config.ConfigFactory
 import slick.jdbc.PostgresProfile
 import slickdb.Tables
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 
@@ -38,11 +37,9 @@ object Main extends App {
     else {
       val bucketName = config.getString("s3.api-data.bucket-name")
       val filesPrefix = config.getString("s3.api-data.files_prefix")
-      val awsCredentials: AWSCredentials = new AWSCredentials {
-        override def getAWSAccessKeyId: String = config.getString("s3.api-data.credentials.access_key_id")
-
-        override def getAWSSecretKey: String = config.getString("s3.api-data.credentials.secret_key")
-      }
+      val accessKey = config.getString("s3.api-data.credentials.access_key_id")
+      val secretKey = config.getString("s3.api-data.credentials.secret_key")
+      val awsCredentials = AwsBasicCredentials.create(accessKey, secretKey)
 
       S3ApiProvider(awsCredentials, bucketName, filesPrefix)
     }

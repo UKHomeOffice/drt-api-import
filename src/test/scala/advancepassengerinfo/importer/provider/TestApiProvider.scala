@@ -12,8 +12,8 @@ import com.typesafe.scalalogging.Logger
 import scala.concurrent.ExecutionContext
 
 
-case class TestApiProvider()(implicit actorSystem: ActorSystem, materializer: Materializer, executionContext: ExecutionContext) extends ApiProviderLike {
-  val log = Logger(getClass)
+case class TestApiProvider() extends ApiProviderLike {
+  val log: Logger = Logger(getClass)
 
   def filesAsSource: Source[String, NotUsed] = Source(getListOfFiles("").sorted)
 
