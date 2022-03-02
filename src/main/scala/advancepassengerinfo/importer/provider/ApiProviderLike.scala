@@ -56,10 +56,6 @@ trait ApiProviderLike {
       }
     }
 
-  def fileNameAndContentFromZip[X](zipFileName: String,
-                                   zipInputStream: ZipInputStream): (String, Try[List[(String, String)]]) =
-    (zipFileName, tryJsonContent(zipInputStream))
-
   def tryJsonContent[X](zipInputStream: ZipInputStream): Try[List[(String, String)]] = Try {
     Stream
       .continually(zipInputStream.getNextEntry)

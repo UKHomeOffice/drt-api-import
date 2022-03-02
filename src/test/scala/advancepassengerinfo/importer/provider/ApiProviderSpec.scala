@@ -1,69 +1,47 @@
 package advancepassengerinfo.importer.provider
 
-import advancepassengerinfo.importer.persistence.ManifestPersistor
+import advancepassengerinfo.importer.persistence.{ManifestPersistor, Persistence}
 import advancepassengerinfo.importer.slickdb.{Builder, VoyageManifestPassengerInfoTable}
 import advancepassengerinfo.importer.{InMemoryDatabase, PostgresDateHelpers}
 import advancepassengerinfo.manifests.{PassengerInfo, VoyageManifest}
+import akka.NotUsed
 import akka.actor.{ActorRef, ActorSystem}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.{KillSwitches, Materializer, UniqueKillSwitch}
 import akka.testkit.TestProbe
-import akka.{Done, NotUsed}
 import drtlib.SDate
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import software.amazon.awssdk.services.s3.S3AsyncClient
-import software.amazon.awssdk.services.s3.model.ListObjectsRequest
 
 import java.sql.Timestamp
 import scala.collection.immutable
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
-import scala.jdk.CollectionConverters.CollectionHasAsScala
-import scala.jdk.FutureConverters.CompletionStageOps
 import scala.language.postfixOps
 import scala.util.{Success, Try}
 
-trait DqFileImporter {
-  def processFilesAfter(lastFileName: String): Source[String, NotUsed]
-}
-
-case class DqFileImporterImpl(fileNameProvider: DqFileNameProvider,
-                              fileProcessor: DqFileProcessor,
-                              throttle: FiniteDuration)
-                             (implicit ec: ExecutionContext) extends DqFileImporter {
-  def processFilesAfter(lastFileName: String): Source[String, NotUsed] =
-    Source
-      .unfoldAsync((lastFileName, List[String]())) { case (lastFileName, lastFiles) =>
-        fileNameProvider.markerAndNextFileNames(lastFileName).map {
-          case (nextFetch, newFiles) => Option((nextFetch, newFiles), (lastFileName, lastFiles))
-        }
-      }
-      .throttle(1, throttle)
-      .map { x =>
-        println(s"x: $x")
-        x
-      }
-      .map(_._2)
-      .mapConcat(identity)
-      .mapAsync(1) { f =>
-        fileProcessor.process(f).map(_ => f)
-      }
-}
-
-trait DqFileProcessor {
-  val process: String => Future[Done]
-}
-
 case class MockDqFileProcessor(probe: ActorRef) extends DqFileProcessor {
-  override val process: String => Future[Done] = (objectKey: String) => {
+  override val process: String => Source[Option[Int], NotUsed] = objectKey => {
     probe ! objectKey
-    Future.successful(Done)
+    Source(List(Option(1)))
   }
 }
 
-trait S3FileNamesProvider {
-  val nextFiles: String => Future[List[String]]
+case class MockPersistence(probe: ActorRef) extends Persistence {
+  override def persistManifest(jsonFileName: String, manifest: VoyageManifest): Future[Option[Int]] = {
+    probe ! jsonFileName
+    Future.successful(Option(1))
+  }
+
+  override def persistJsonFile(zipFileName: String, jsonFileName: String, wasSuccessful: Boolean, dateIsSuspicious: Boolean): Future[Int] = {
+    probe ! jsonFileName
+    Future.successful(1)
+  }
+
+  override def persistZipFile(zipFileName: String, success: Boolean): Future[Boolean] = {
+    probe ! zipFileName
+    Future.successful(true)
+  }
 }
 
 case class MockS3FileNamesProvider(files: List[List[String]]) extends S3FileNamesProvider {
@@ -77,24 +55,6 @@ case class MockS3FileNamesProvider(files: List[List[String]]) extends S3FileName
   }
 }
 
-case class S3FileNamesProviderImpl(s3Client: S3AsyncClient, bucket: String)
-                                  (implicit ec: ExecutionContext) extends S3FileNamesProvider {
-  override val nextFiles: String => Future[List[String]] = (lastFile: String) => s3Client
-    .listObjects(ListObjectsRequest.builder().bucket(bucket).maxKeys(5).marker(lastFile).build()).asScala
-    .map(_.contents().asScala.map(_.key()).toList)
-}
-
-case class DqFileNameProvider(s3FileNamesProvider: S3FileNamesProvider)
-                             (implicit ec: ExecutionContext) {
-  val markerAndNextFileNames: String => Future[(String, List[String])] =
-    (lastFile: String) => s3FileNamesProvider.nextFiles(lastFile)
-      .map { fileNames =>
-        val files = if (lastFile.nonEmpty) fileNames.filterNot(_.contains(lastFile)) else fileNames
-        val nextFetch = files.sorted.reverse.headOption.getOrElse(lastFile)
-        (nextFetch, files)
-      }
-}
-
 class ApiProviderSpec extends AnyWordSpec with Matchers with Builder {
   implicit val actorSystem: ActorSystem = ActorSystem("api-data-import")
   implicit val materializer: Materializer = Materializer.createMaterializer(actorSystem)
@@ -106,15 +66,18 @@ class ApiProviderSpec extends AnyWordSpec with Matchers with Builder {
 
   "An importer" should {
     "send all the files from an s3 file name provider in sequence" in {
-      val probe = TestProbe("api")
+      val filesProbe = TestProbe("files")
+      val persistenceProbe = TestProbe("persistence")
 
       val batchedFileNames = List(List("a", "b"), List("c", "d"), List("e", "f"))
       val mockS3Files = DqFileNameProvider(MockS3FileNamesProvider(batchedFileNames))
-      val importer = DqFileImporterImpl(mockS3Files, MockDqFileProcessor(probe.ref), 100.millis)
+      val mockProcessor = MockDqFileProcessor(filesProbe.ref)
+      val mockPersistence = MockPersistence(persistenceProbe.ref)
+      val importer = DqFileImporterImpl(mockS3Files, mockProcessor, mockPersistence, 100.millis)
 
       val killSwitch: UniqueKillSwitch = importer.processFilesAfter("").viaMat(KillSwitches.single)(Keep.right).toMat(Sink.ignore)(Keep.left).run()
 
-      batchedFileNames.flatten.foreach(f => probe.expectMsg(f))
+      batchedFileNames.flatten.foreach(f => filesProbe.expectMsg(f))
 
       killSwitch.shutdown()
     }

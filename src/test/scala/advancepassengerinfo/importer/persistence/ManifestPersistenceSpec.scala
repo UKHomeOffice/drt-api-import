@@ -47,7 +47,7 @@ class ManifestPersistenceSpec extends AnyWordSpec with Matchers with Builder {
       val (dayOfWeek, weekOfYear) = Await.result(InMemoryDatabase.con.run(vmTable.dayOfWeekAndWeekOfYear(schTs)), 1 second).getOrElse((-1, -1))
 
       val jsonFile = "test.json"
-      Await.ready(InMemoryDatabase.con.run(vmTable.rowsToInsert(vm, dayOfWeek, weekOfYear, jsonFile)), 1 second)
+      Await.ready(InMemoryDatabase.con.run(vmTable.rowsToInsert(vm, dayOfWeek, weekOfYear, jsonFile)._2), 1 second)
 
       val paxEntries = InMemoryDatabase.tables.VoyageManifestPassengerInfo.result
 

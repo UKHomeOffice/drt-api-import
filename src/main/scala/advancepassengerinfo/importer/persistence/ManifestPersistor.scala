@@ -1,7 +1,5 @@
 package advancepassengerinfo.importer.persistence
 
-import java.sql.Timestamp
-
 import advancepassengerinfo.importer.Db
 import advancepassengerinfo.importer.slickdb.VoyageManifestPassengerInfoTable
 import advancepassengerinfo.manifests.VoyageManifest
@@ -10,6 +8,7 @@ import akka.stream.scaladsl.Source
 import drtlib.SDate
 import org.slf4j.{Logger, LoggerFactory}
 
+import java.sql.Timestamp
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.language.postfixOps
@@ -18,12 +17,13 @@ import scala.util.{Failure, Success, Try}
 
 
 case class ManifestPersistor(db: Db, parallelism: Int)(implicit ec: ExecutionContext) {
-  val log: Logger = LoggerFactory.getLogger(getClass)
+  private val log: Logger = LoggerFactory.getLogger(getClass)
   log.info(s"parallelism level: $parallelism")
 
-  val dqRegex: Regex = "drt_dq_([0-9]{2})([0-9]{2})([0-9]{2})_[0-9]{6}_[0-9]{4}\\.zip".r
+  private val dqRegex: Regex = "drt_dq_([0-9]{2})([0-9]{2})([0-9]{2})_[0-9]{6}_[0-9]{4}\\.zip".r
 
-  val manifestTable = VoyageManifestPassengerInfoTable(db.tables)
+  private val manifestTable = VoyageManifestPassengerInfoTable(db.tables)
+  private val oneDayMillis: Long = 60 * 60 * 24 * 1000L
 
   import db.tables.profile.api._
 
@@ -32,31 +32,29 @@ case class ManifestPersistor(db: Db, parallelism: Int)(implicit ec: ExecutionCon
     case _ => None
   }
 
-  val oneDayMillis: Long = 60 * 60 * 24 * 1000L
-
   def addPersistenceToStream(zipTries: Source[(String, Try[List[(String, Try[VoyageManifest])]]), NotUsed]): Source[Int, NotUsed] = zipTries
     .mapConcat {
-      case (zipFile, Failure(t)) =>
+      case (zipFileName, Failure(t)) =>
         log.error(s"Recording a failed zip", t)
-        Await.ready(persistProcessedZipRecord(zipFile, success = false), 5 second)
+        Await.ready(persistProcessedZipRecord(zipFileName, success = false), 5 second)
         List()
-      case (zipFile, Success(manifestTries)) =>
-        Await.ready(persistProcessedZipRecord(zipFile, success = true), 5 second)
+      case (zipFileName, Success(manifestTries)) =>
+        Await.ready(persistProcessedZipRecord(zipFileName, success = true), 5 second)
         manifestTries
           .map {
             case (jsonFile, Failure(t)) =>
               log.error(s"Recording a failed json file", t)
-              Await.ready(persistFailedJsonRecord(zipFile, jsonFile), 5 second)
+              Await.ready(persistFailedJsonRecord(zipFileName, jsonFile), 5 second)
               None
             case (jsonFile, Success(manifest)) =>
-              Option(zipFile, jsonFile, manifest)
+              Option(zipFileName, jsonFile, manifest)
           }
           .collect {
             case Some(tuple) => tuple
           }
     }
     .mapAsync(parallelism) {
-      case (zipFile, jsonFile, vm) => addDayOfWeekAndWeekOfyear(zipFile, jsonFile, vm)
+      case (zipFile, jsonFile, vm) => addDayOfWeekAndWeekOfYear(zipFile, jsonFile, vm)
     }
     .mapAsync(parallelism) {
       case (zipFile, jsonFile, vm, dow, woy) => persistManifest(zipFile, jsonFile, vm, dow, woy)
@@ -65,7 +63,7 @@ case class ManifestPersistor(db: Db, parallelism: Int)(implicit ec: ExecutionCon
   val con: db.tables.profile.backend.DatabaseDef = db.con
 
   def persistManifest(zf: String, jf: String, vm: VoyageManifest, dow: Int, woy: Int): Future[Int] = con
-    .run(manifestTable.rowsToInsert(vm, dow, woy, jf))
+    .run(manifestTable.rowsToInsert(vm, dow, woy, jf)._2)
     .flatMap { _ => persistProcessedJsonRecord(zf, jf, vm) }
 
   def persistProcessedJsonRecord(zf: String, jf: String, vm: VoyageManifest): Future[Int] = {
@@ -98,13 +96,11 @@ case class ManifestPersistor(db: Db, parallelism: Int)(implicit ec: ExecutionCon
     maybeSuspiciousDate.getOrElse(false)
   }
 
-  def addDayOfWeekAndWeekOfyear(zipFile: String, jsonFile: String, vm: VoyageManifest): Future[(String, String, VoyageManifest, Int, Int)] = {
+  def addDayOfWeekAndWeekOfYear(zipFile: String, jsonFile: String, vm: VoyageManifest): Future[(String, String, VoyageManifest, Int, Int)] = {
     val schTs = new Timestamp(vm.scheduleArrivalDateTime.map(_.millisSinceEpoch).getOrElse(0L))
 
     con.run(manifestTable.dayOfWeekAndWeekOfYear(schTs)).collect {
-      case Some((dow, woy)) =>
-        println(s"got dow: $dow for ${SDate(schTs.getTime).toISOString()}")
-        (zipFile, jsonFile, vm, dow, woy)
+      case Some((dow, woy)) => (zipFile, jsonFile, vm, dow, woy)
     }
   }
 
