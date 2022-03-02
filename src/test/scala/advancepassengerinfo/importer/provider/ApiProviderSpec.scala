@@ -22,6 +22,7 @@ import scala.util.{Success, Try}
 
 case class MockDqFileProcessor(probe: ActorRef) extends DqFileProcessor {
   override val process: String => Source[Option[Int], NotUsed] = objectKey => {
+    println(s"zip file name: $objectKey")
     probe ! objectKey
     Source(List(Option(1)))
   }
@@ -29,16 +30,19 @@ case class MockDqFileProcessor(probe: ActorRef) extends DqFileProcessor {
 
 case class MockPersistence(probe: ActorRef) extends Persistence {
   override def persistManifest(jsonFileName: String, manifest: VoyageManifest): Future[Option[Int]] = {
+    println(s"manifest from $jsonFileName")
     probe ! jsonFileName
     Future.successful(Option(1))
   }
 
   override def persistJsonFile(zipFileName: String, jsonFileName: String, wasSuccessful: Boolean, dateIsSuspicious: Boolean): Future[Int] = {
+    println(s"json file $jsonFileName")
     probe ! jsonFileName
     Future.successful(1)
   }
 
   override def persistZipFile(zipFileName: String, success: Boolean): Future[Boolean] = {
+    println(s"json file $zipFileName")
     probe ! zipFileName
     Future.successful(true)
   }
