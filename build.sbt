@@ -14,7 +14,11 @@ lazy val root = (project in file("."))
       "com.h2database" % "h2" % h2DatabaseVersion % Test,
       "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion % Test,
 
-      "ch.qos.logback" % "logback-classic" % logbackClassicVersion,
+      "ch.qos.logback.contrib" % "logback-json-classic" % "0.1.5",
+      "ch.qos.logback.contrib" % "logback-jackson" % "0.1.5",
+      "com.fasterxml.jackson.core" % "jackson-databind" % "2.10.0",
+      "org.codehaus.janino" % "janino" % janinoVersion,
+
       "com.typesafe" % "config" % typesafeConfigVersion,
       "com.typesafe.scala-logging" %% "scala-logging" % scalaLoggingVersion,
       "com.typesafe.akka" %% "akka-stream" % akkaVersion,
@@ -26,7 +30,8 @@ lazy val root = (project in file("."))
       "io.spray" %% "spray-json" % sprayJsonVersion,
       "org.postgresql" % "postgresql" % postgresqlVersion,
     )).value,
-    Test / parallelExecution := false
+    Test / parallelExecution := false,
+    Test / javaOptions += "-Duser.timezone=UTC",
   )
   .enablePlugins(DockerPlugin)
   .enablePlugins(AshScriptPlugin)

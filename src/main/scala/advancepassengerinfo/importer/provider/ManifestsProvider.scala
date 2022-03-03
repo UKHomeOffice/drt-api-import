@@ -4,6 +4,7 @@ import advancepassengerinfo.importer.parser.JsonManifestParser
 import advancepassengerinfo.manifests.VoyageManifest
 import akka.NotUsed
 import akka.stream.scaladsl.Source
+import com.typesafe.scalalogging.Logger
 import software.amazon.awssdk.core.async.AsyncResponseTransformer
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.{GetObjectRequest, GetObjectResponse}
@@ -14,7 +15,7 @@ import java.util.zip.ZipInputStream
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.FutureConverters.CompletionStageOps
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 trait ManifestsProvider {
   def tryManifests(fileName: String): Source[Try[Seq[(String, Try[VoyageManifest])]], NotUsed]
@@ -22,21 +23,41 @@ trait ManifestsProvider {
 
 case class S3ZippedManifestsProvider(s3Client: S3AsyncClient, bucket: String)
                                     (implicit ec: ExecutionContext) extends ManifestsProvider {
+  private val log = Logger(getClass)
+
   override def tryManifests(fileName: String): Source[Try[Seq[(String, Try[VoyageManifest])]], NotUsed] =
     Source
       .future(zipInputStream(fileName))
-      .map(stream => Try(extractManifests(stream)))
+      .map {
+        case Some(stream) => Try(extractManifests(stream))
+        case None => Failure(new Exception(s"Failed to extract zip"))
+      }
 
-  def zipInputStream(objectKey: String): Future[ZipInputStream] =
-    inputStream(objectKey).map(s => new ZipInputStream(s))
+  def zipInputStream(objectKey: String): Future[Option[ZipInputStream]] =
+    inputStream(objectKey)
+      .map { maybeStream =>
+        maybeStream.map(stream => new ZipInputStream(stream))
+      }
+      .recover {
+        case t =>
+          log.error(s"Failed to get $objectKey from $bucket", t)
+          None
+      }
 
-  private def inputStream(objectKey: String): Future[InputStream] =
+  private def inputStream(objectKey: String): Future[Option[InputStream]] = {
     s3Client
       .getObject(
         buildGetObjectRequest(objectKey),
         AsyncResponseTransformer.toBytes[GetObjectResponse]
       )
-      .asScala.map(_.asInputStream())
+      .asScala
+      .map(response => Option(response.asInputStream()))
+      .recover {
+        case t =>
+          log.error(s"Failed to get $objectKey from $bucket", t)
+          None
+      }
+  }
 
   private def buildGetObjectRequest(objectKey: String) =
     GetObjectRequest.builder().bucket(bucket).key(objectKey).build()

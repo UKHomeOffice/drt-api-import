@@ -32,7 +32,7 @@
         <appender-ref ref="ASYNC"/>
     </root>
 
-    <logger name="slick.jdbc.JdbcBackend.statement" level="${SLICK_DEBUG_LEVEL:-WARN}">
-        <appender-ref ref="ASYNC"/>
-    </logger>
+<!--    <logger name="slick.jdbc.JdbcBackend.statement" level="${SLICK_DEBUG_LEVEL:-WARN}">-->
+<!--        <appender-ref ref="ASYNC"/>-->
+<!--    </logger>-->
 </configuration>

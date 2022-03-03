@@ -46,7 +46,7 @@ case class VoyageManifestPassengerInfoTable(tables: Tables) {
         case "Y" => true
         case _ => false
       },
-      jsonFile = jsonFile
+      json_file = jsonFile
     )
   }
 

@@ -3,6 +3,7 @@ package advancepassengerinfo.importer.persistence
 import advancepassengerinfo.importer.Db
 import advancepassengerinfo.importer.slickdb.VoyageManifestPassengerInfoTable
 import advancepassengerinfo.manifests.VoyageManifest
+import com.typesafe.scalalogging.Logger
 import drtlib.SDate
 
 import java.sql.Timestamp
@@ -20,6 +21,8 @@ trait Persistence {
 
 case class PersistenceImp(db: Db)
                          (implicit ec: ExecutionContext) extends Persistence {
+  private val log = Logger(getClass)
+
   val manifestTable: VoyageManifestPassengerInfoTable = VoyageManifestPassengerInfoTable(db.tables)
 
   val con: db.tables.profile.backend.DatabaseDef = db.con
@@ -27,13 +30,24 @@ case class PersistenceImp(db: Db)
   import db.tables.profile.api._
 
   override def persistManifest(jsonFileName: String, manifest: VoyageManifest): Future[Option[Int]] = {
-    manifest.scheduleArrivalDateTime.map { scheduledDate =>
-      dayOfWeekAndWeekOfYear(scheduledDate).flatMap {
-        case (dayOfWeek, weekOfYear) =>
-          val (rowCount, action) = manifestTable.rowsToInsert(manifest, dayOfWeek, weekOfYear, jsonFileName)
-          con.run(action).map(_ => Option(rowCount))
+    manifest.scheduleArrivalDateTime
+      .map { scheduledDate =>
+        dayOfWeekAndWeekOfYear(scheduledDate)
+          .flatMap {
+            case (dayOfWeek, weekOfYear) =>
+              val (rowCount, action) = manifestTable.rowsToInsert(manifest, dayOfWeek, weekOfYear, jsonFileName)
+              con.run(action).map(_ => Option(rowCount))
+          }
+          .recover {
+            case t =>
+              log.error(s"Failed to persist manifest", t)
+              None
+          }
       }
-    }.getOrElse(Future.successful(None))
+      .getOrElse {
+        log.error(s"Failed to get a scheduled time for ${manifest.DeparturePortCode} > ${manifest.ArrivalPortCode} :: ${manifest.CarrierCode}-${manifest.VoyageNumber} :: ${manifest.ScheduledDateOfArrival}T${manifest.ScheduledDateOfArrival}")
+        Future.successful(None)
+      }
   }
 
   private def dayOfWeekAndWeekOfYear(date: SDate): Future[(Int, Int)] = {

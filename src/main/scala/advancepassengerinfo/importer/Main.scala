@@ -5,7 +5,10 @@ import advancepassengerinfo.importer.persistence.PersistenceImp
 import advancepassengerinfo.importer.provider._
 import advancepassengerinfo.importer.slickdb.Tables
 import akka.actor.ActorSystem
+import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.config.ConfigFactory
+import com.typesafe.scalalogging.Logger
+import drtlib.SDate
 import slick.jdbc.PostgresProfile
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.services.s3.S3AsyncClient
@@ -19,6 +22,7 @@ object PostgresTables extends {
 } with Tables
 
 object Main extends App {
+  val log = Logger(getClass)
   val config = ConfigFactory.load
 
   implicit val actorSystem: ActorSystem = ActorSystem("api-data-import")
@@ -48,10 +52,20 @@ object Main extends App {
   val manifestsProvider = S3ZippedManifestsProvider(s3Client, bucketName)
   val persistence = PersistenceImp(PostgresDb)
   val feed = DqApiFeedImpl(fileNamesProvider, DqFileProcessorImpl(manifestsProvider, persistence), 1.second)
-  val eventual = persistence.lastPersistedFileName.map {
-    case Some(lastFileName) => feed.processFilesAfter(lastFileName)
-    case None => feed.processFilesAfter("")
-  }
+
+  val eventual = Source
+    .future(persistence.lastPersistedFileName)
+    .log("manifests")
+    .flatMapConcat {
+      case Some(lastFileName) =>
+        log.info(s"Last processed file: $lastFileName")
+        feed.processFilesAfter(lastFileName)
+      case None =>
+        val date = SDate.now().addDays(-2)
+        val yymmdd = f"${date.getFullYear() - 2000}${date.getMonth()}%02d${date.getDate()}%02d"
+        log.info(s"No last processed file. Starting from 2 days ago ($yymmdd)")
+        feed.processFilesAfter("drt_dq_" + yymmdd + "_000000_0000.zip")
+    }.runWith(Sink.ignore)
 
   Await.ready(eventual, Duration.Inf)
 }
