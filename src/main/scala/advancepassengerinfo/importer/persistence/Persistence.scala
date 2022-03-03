@@ -11,9 +11,11 @@ import scala.concurrent.{ExecutionContext, Future}
 trait Persistence {
   def persistManifest(jsonFileName: String, manifest: VoyageManifest): Future[Option[Int]]
 
-  def persistJsonFile(zipFileName: String, jsonFileName: String, wasSuccessful: Boolean, dateIsSuspicious: Boolean): Future[Int]
+  def persistJsonFile(zipFileName: String, jsonFileName: String, successful: Boolean, dateIsSuspicious: Boolean): Future[Int]
 
-  def persistZipFile(zipFileName: String, success: Boolean): Future[Boolean]
+  def persistZipFile(zipFileName: String, successful: Boolean): Future[Boolean]
+
+  def lastPersistedFileName: Future[Option[String]]
 }
 
 case class PersistenceImp(db: Db)
@@ -42,16 +44,20 @@ case class PersistenceImp(db: Db)
     }
   }
 
-  override def persistJsonFile(zipFileName: String, jsonFileName: String, wasSuccessful: Boolean, dateIsSuspicious: Boolean): Future[Int] = {
+  override def persistJsonFile(zipFileName: String, jsonFileName: String, successful: Boolean, dateIsSuspicious: Boolean): Future[Int] = {
     val processedAt = new Timestamp(SDate.now().millisSinceEpoch)
-    val processedJsonFileToInsert = db.tables.ProcessedJson += db.tables.ProcessedJsonRow(zipFileName, jsonFileName, dateIsSuspicious, wasSuccessful, processedAt)
+    val processedJsonFileToInsert = db.tables.ProcessedJson += db.tables.ProcessedJsonRow(zipFileName, jsonFileName, dateIsSuspicious, successful, processedAt)
     con.run(processedJsonFileToInsert)
   }
 
-  override def persistZipFile(zipFileName: String, success: Boolean): Future[Boolean] = {
+  override def persistZipFile(zipFileName: String, successful: Boolean): Future[Boolean] = {
     val processedAt = new Timestamp(SDate.now().millisSinceEpoch)
-    val processedZipFileToInsert = db.tables.ProcessedZip += db.tables.ProcessedZipRow(zipFileName, success, processedAt)
+    val processedZipFileToInsert = db.tables.ProcessedZip += db.tables.ProcessedZipRow(zipFileName, successful, processedAt)
     con.run(processedZipFileToInsert).map(_ > 0)
   }
 
+  override def lastPersistedFileName: Future[Option[String]] = {
+    val sourceFileNamesQuery = db.tables.ProcessedJson.map(_.zip_file_name)
+    con.run(sourceFileNamesQuery.max.result)
+  }
 }
