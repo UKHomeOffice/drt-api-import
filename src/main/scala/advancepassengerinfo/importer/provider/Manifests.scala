@@ -14,14 +14,12 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Try}
 
 
-trait ManifestsProvider {
+trait Manifests {
   def tryManifests(fileName: String): Source[Try[Seq[(String, Try[VoyageManifest])]], NotUsed]
 }
 
-case class ZippedManifestsProvider(fileProvider: FileAsStream)
-                                  (implicit ec: ExecutionContext) extends ManifestsProvider {
-  private val log = Logger(getClass)
-
+case class ZippedManifests(fileProvider: FileAsStream)
+                          (implicit ec: ExecutionContext) extends Manifests {
   override def tryManifests(fileName: String): Source[Try[Seq[(String, Try[VoyageManifest])]], NotUsed] =
     Source
       .future(zipInputStream(fileName))

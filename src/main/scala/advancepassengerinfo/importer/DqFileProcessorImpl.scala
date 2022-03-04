@@ -1,6 +1,7 @@
-package advancepassengerinfo.importer.provider
+package advancepassengerinfo.importer
 
 import advancepassengerinfo.importer.persistence.Persistence
+import advancepassengerinfo.importer.provider.Manifests
 import advancepassengerinfo.manifests.VoyageManifest
 import akka.NotUsed
 import akka.stream.scaladsl.Source
@@ -15,12 +16,12 @@ trait DqFileProcessor {
   def process(zipFileName: String): Source[Option[(Int, Int)], Any]
 }
 
-case class DqFileProcessorImpl(manifestsProvider: ManifestsProvider, persistence: Persistence)
+case class DqFileProcessorImpl(manifestsProvider: Manifests, persistence: Persistence)
                               (implicit ec: ExecutionContext) extends DqFileProcessor {
   private val log = Logger(getClass)
 
   val oneDayMillis: Long = 60 * 60 * 24 * 1000L
-  val dqRegex: Regex = "drt_dq_([0-9]{2})([0-9]{2})([0-9]{2})_[0-9]{6}_[0-9]{4}\\.zip".r
+  val dqFileNameDateRegex: Regex = "drt_dq_([0-9]{2})([0-9]{2})([0-9]{2})_[0-9]{6}_[0-9]{4}\\.zip".r
 
   def process(zipFileName: String): Source[Option[(Int, Int)], Any] = {
     manifestsProvider.tryManifests(zipFileName).flatMapConcat {
@@ -66,7 +67,7 @@ case class DqFileProcessorImpl(manifestsProvider: ManifestsProvider, persistence
   private def persistFailedJson(zipFileName: String, jsonFileName: String): Future[Int] =
     persistence.persistJsonFile(zipFileName, jsonFileName, successful = false, dateIsSuspicious = false)
 
-  def scheduledIsSuspicious(zf: String, vm: VoyageManifest): Boolean = {
+  private def scheduledIsSuspicious(zf: String, vm: VoyageManifest): Boolean = {
     val maybeSuspiciousDate: Option[Boolean] = for {
       zipDate <- zipFileDate(zf)
       scdDate <- vm.scheduleArrivalDateTime
@@ -77,8 +78,8 @@ case class DqFileProcessorImpl(manifestsProvider: ManifestsProvider, persistence
     maybeSuspiciousDate.getOrElse(false)
   }
 
-  def zipFileDate(fileName: String): Option[SDate] = fileName match {
-    case dqRegex(year, month, day) => Option(SDate(s"20$year-$month-$day"))
+  private def zipFileDate(fileName: String): Option[SDate] = fileName match {
+    case dqFileNameDateRegex(year, month, day) => Option(SDate(s"20$year-$month-$day"))
     case _ => None
   }
 }

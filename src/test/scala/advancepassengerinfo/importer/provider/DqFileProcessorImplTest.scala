@@ -1,6 +1,8 @@
 package advancepassengerinfo.importer.provider
 
 import advancepassengerinfo.generator.ManifestGenerator
+import advancepassengerinfo.importer
+import advancepassengerinfo.importer.DqFileProcessorImpl
 import advancepassengerinfo.importer.persistence.MockPersistence
 import advancepassengerinfo.importer.persistence.MockPersistence.{JsonFileCall, ManifestCall, ZipFileCall}
 import advancepassengerinfo.manifests.VoyageManifest
@@ -17,7 +19,7 @@ import scala.concurrent.{Await, ExecutionContextExecutor}
 import scala.util.{Failure, Success, Try}
 
 
-case class MockManifestsProvider(manifestTries: List[Try[Seq[(String, Try[VoyageManifest])]]]) extends ManifestsProvider {
+case class MockManifests(manifestTries: List[Try[Seq[(String, Try[VoyageManifest])]]]) extends Manifests {
   override def tryManifests(fileName: String): Source[Try[Seq[(String, Try[VoyageManifest])]], NotUsed] =
     Source(manifestTries)
 }
@@ -37,13 +39,13 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
   val jsonFileName = "manifest.json"
 
   "A DQ file processor" should {
-    val mockZipFailureProvider = MockManifestsProvider(List(Failure(new Exception("bad zip"))))
+    val mockZipFailureProvider = MockManifests(List(Failure(new Exception("bad zip"))))
     val jsonWithFailedManifest = (jsonFileName, Failure(new Exception("bad json")))
 
     val manifest = ManifestGenerator.manifest()
     val jsonWithSuccessfulManifest = (jsonFileName, Success(manifest))
 
-    def singleZipMockProvider(jsonWithManifests: Seq[(String, Try[VoyageManifest])]) = MockManifestsProvider(List(Success(jsonWithManifests)))
+    def singleZipMockProvider(jsonWithManifests: Seq[(String, Try[VoyageManifest])]) = MockManifests(List(Success(jsonWithManifests)))
 
     "Persist a failed zip file" in {
       val probe = TestProbe("probe")
@@ -59,7 +61,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
     "Persist a failed json file, and a failed zip file" in {
       val probe = TestProbe("probe")
       val mockPersistence = MockPersistence(probe.ref)
-      val processor = DqFileProcessorImpl(singleZipMockProvider(Seq(jsonWithFailedManifest)), mockPersistence)
+      val processor = importer.DqFileProcessorImpl(singleZipMockProvider(Seq(jsonWithFailedManifest)), mockPersistence)
       val result = Await.result(processor.process(zipFileName).runWith(Sink.seq), 1.second)
 
       probe.expectMsg(JsonFileCall(zipFileName, jsonFileName, successful = false, dateIsSuspicious = false))
@@ -71,7 +73,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
     "Persist a manifest, successful json file and successful zip file" in {
       val probe = TestProbe("probe")
       val mockPersistence = MockPersistence(probe.ref)
-      val processor = DqFileProcessorImpl(singleZipMockProvider(Seq(jsonWithSuccessfulManifest)), mockPersistence)
+      val processor = importer.DqFileProcessorImpl(singleZipMockProvider(Seq(jsonWithSuccessfulManifest)), mockPersistence)
       val result = Await.result(processor.process(zipFileName).runWith(Sink.seq), 1.second)
 
       probe.expectMsg(ManifestCall(jsonFileName, manifest))
@@ -89,7 +91,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
         ("2.json", Success(manifest)),
         ("3.json", Success(manifest)),
       )
-      val processor = DqFileProcessorImpl(singleZipMockProvider(manifests), mockPersistence)
+      val processor = importer.DqFileProcessorImpl(singleZipMockProvider(manifests), mockPersistence)
       val result = Await.result(processor.process(zipFileName).runWith(Sink.seq), 1.second)
 
       probe.expectMsg(ManifestCall("1.json", manifest))
@@ -111,7 +113,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
         ("2.json", Failure(new Exception("failed"))),
         ("3.json", Success(manifest)),
       )
-      val processor = DqFileProcessorImpl(singleZipMockProvider(manifests), mockPersistence)
+      val processor = importer.DqFileProcessorImpl(singleZipMockProvider(manifests), mockPersistence)
       val result = Await.result(processor.process(zipFileName).runWith(Sink.seq), 1.second)
 
       probe.expectMsg(ManifestCall("1.json", manifest))

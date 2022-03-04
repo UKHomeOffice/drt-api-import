@@ -48,12 +48,12 @@ object Main extends App {
       .build()
   }
 
-  val s3FileNamesProvider = S3FileNamesProviderImpl(s3Client, bucketName)
-  val fileNamesProvider = DqFileNameProvider(s3FileNamesProvider)
+  val s3FileNamesProvider = S3FileNames(s3Client, bucketName)
   val s3FileAsStream = S3FileAsStream(s3Client, bucketName)
-  val manifestsProvider = ZippedManifestsProvider(s3FileAsStream)
+  val manifestsProvider = ZippedManifests(s3FileAsStream)
   val persistence = PersistenceImp(PostgresDb)
-  val feed = DqApiFeedImpl(fileNamesProvider, DqFileProcessorImpl(manifestsProvider, persistence), 1.second)
+  val zipProcessor = DqFileProcessorImpl(manifestsProvider, persistence)
+  val feed = DqApiFeedImpl(s3FileNamesProvider, zipProcessor, 1.second)
 
   val eventual = Source
     .future(persistence.lastPersistedFileName)

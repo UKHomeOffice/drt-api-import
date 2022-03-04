@@ -7,12 +7,12 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.FutureConverters.CompletionStageOps
 
-trait S3FileNamesProvider {
+trait FileNames {
   val nextFiles: String => Future[List[String]]
 }
 
-case class S3FileNamesProviderImpl(s3Client: S3AsyncClient, bucket: String)
-                                  (implicit ec: ExecutionContext) extends S3FileNamesProvider {
+case class S3FileNames(s3Client: S3AsyncClient, bucket: String)
+                      (implicit ec: ExecutionContext) extends FileNames {
   override val nextFiles: String => Future[List[String]] = (lastFile: String) => s3Client
     .listObjects(ListObjectsRequest.builder().bucket(bucket).maxKeys(5).marker(lastFile).build()).asScala
     .map(_.contents().asScala.map(_.key()).toList)

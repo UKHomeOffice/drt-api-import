@@ -25,7 +25,7 @@ case class MockFileAsStreamWithBadZip(resource: String) extends FileAsStream {
   }
 }
 
-class ZippedManifestsProviderTest extends TestKit(ActorSystem("MySpec"))
+class ZippedManifestsTest extends TestKit(ActorSystem("MySpec"))
   with AnyWordSpecLike
   with Matchers
   with BeforeAndAfterAll {
@@ -38,21 +38,21 @@ class ZippedManifestsProviderTest extends TestKit(ActorSystem("MySpec"))
 
   "A ZippedManifestsProvider" should {
     "handle an exception from the file provider" in {
-      val provider: ManifestsProvider = ZippedManifestsProvider(MockFileAsStreamWithException)
+      val provider: Manifests = ZippedManifests(MockFileAsStreamWithException)
       val result: Seq[Try[Seq[(String, Try[VoyageManifest])]]] = Await.result(provider.tryManifests("some.zip").runWith(Sink.seq), 1.second)
 
       result.head.getClass should ===(classOf[Failure[Seq[(String, Try[VoyageManifest])]]])
     }
 
     "handle corrupt zip data" in {
-      val provider: ManifestsProvider = ZippedManifestsProvider(MockFileAsStreamWithBadZip("/manifest-corrupt.zip"))
+      val provider: Manifests = ZippedManifests(MockFileAsStreamWithBadZip("/manifest-corrupt.zip"))
       val result: Seq[Try[Seq[(String, Try[VoyageManifest])]]] = Await.result(provider.tryManifests("some.zip").runWith(Sink.seq), 1.second)
 
       result.head.getClass should ===(classOf[Failure[Seq[(String, Try[VoyageManifest])]]])
     }
 
     "handle valid zip data" in {
-      val provider: ManifestsProvider = ZippedManifestsProvider(MockFileAsStreamWithBadZip("/manifest.zip"))
+      val provider: Manifests = ZippedManifests(MockFileAsStreamWithBadZip("/manifest.zip"))
       val result: Seq[Try[Seq[(String, Try[VoyageManifest])]]] = Await.result(provider.tryManifests("some.zip").runWith(Sink.seq), 1.second)
 
       result.head.getClass should ===(classOf[Success[Seq[(String, Try[VoyageManifest])]]])
