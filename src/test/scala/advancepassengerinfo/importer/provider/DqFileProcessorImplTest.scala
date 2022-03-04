@@ -1,10 +1,9 @@
 package advancepassengerinfo.importer.provider
 
 import advancepassengerinfo.generator.ManifestGenerator
-import advancepassengerinfo.importer
-import advancepassengerinfo.importer.DqFileProcessorImpl
 import advancepassengerinfo.importer.persistence.MockPersistence
 import advancepassengerinfo.importer.persistence.MockPersistence.{JsonFileCall, ManifestCall, ZipFileCall}
+import advancepassengerinfo.importer.processor.DqFileProcessorImpl
 import advancepassengerinfo.manifests.VoyageManifest
 import akka.NotUsed
 import akka.actor.ActorSystem
@@ -61,7 +60,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
     "Persist a failed json file, and a failed zip file" in {
       val probe = TestProbe("probe")
       val mockPersistence = MockPersistence(probe.ref)
-      val processor = importer.DqFileProcessorImpl(singleZipMockProvider(Seq(jsonWithFailedManifest)), mockPersistence)
+      val processor = DqFileProcessorImpl(singleZipMockProvider(Seq(jsonWithFailedManifest)), mockPersistence)
       val result = Await.result(processor.process(zipFileName).runWith(Sink.seq), 1.second)
 
       probe.expectMsg(JsonFileCall(zipFileName, jsonFileName, successful = false, dateIsSuspicious = false))
@@ -73,7 +72,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
     "Persist a manifest, successful json file and successful zip file" in {
       val probe = TestProbe("probe")
       val mockPersistence = MockPersistence(probe.ref)
-      val processor = importer.DqFileProcessorImpl(singleZipMockProvider(Seq(jsonWithSuccessfulManifest)), mockPersistence)
+      val processor = DqFileProcessorImpl(singleZipMockProvider(Seq(jsonWithSuccessfulManifest)), mockPersistence)
       val result = Await.result(processor.process(zipFileName).runWith(Sink.seq), 1.second)
 
       probe.expectMsg(ManifestCall(jsonFileName, manifest))
@@ -91,7 +90,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
         ("2.json", Success(manifest)),
         ("3.json", Success(manifest)),
       )
-      val processor = importer.DqFileProcessorImpl(singleZipMockProvider(manifests), mockPersistence)
+      val processor = DqFileProcessorImpl(singleZipMockProvider(manifests), mockPersistence)
       val result = Await.result(processor.process(zipFileName).runWith(Sink.seq), 1.second)
 
       probe.expectMsg(ManifestCall("1.json", manifest))
@@ -113,7 +112,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
         ("2.json", Failure(new Exception("failed"))),
         ("3.json", Success(manifest)),
       )
-      val processor = importer.DqFileProcessorImpl(singleZipMockProvider(manifests), mockPersistence)
+      val processor = DqFileProcessorImpl(singleZipMockProvider(manifests), mockPersistence)
       val result = Await.result(processor.process(zipFileName).runWith(Sink.seq), 1.second)
 
       probe.expectMsg(ManifestCall("1.json", manifest))

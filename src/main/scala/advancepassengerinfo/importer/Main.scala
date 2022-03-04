@@ -2,6 +2,7 @@ package advancepassengerinfo.importer
 
 import advancepassengerinfo.importer.PostgresTables.profile
 import advancepassengerinfo.importer.persistence.PersistenceImp
+import advancepassengerinfo.importer.processor.DqFileProcessorImpl
 import advancepassengerinfo.importer.provider._
 import advancepassengerinfo.importer.slickdb.Tables
 import akka.actor.ActorSystem

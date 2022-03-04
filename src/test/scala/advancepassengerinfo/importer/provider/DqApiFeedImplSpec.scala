@@ -1,6 +1,7 @@
 package advancepassengerinfo.importer.provider
 
-import advancepassengerinfo.importer.{DqApiFeedImpl, DqFileProcessor, InMemoryDatabase}
+import advancepassengerinfo.importer.processor.DqFileProcessor
+import advancepassengerinfo.importer.{DqApiFeedImpl, InMemoryDatabase}
 import advancepassengerinfo.importer.slickdb.VoyageManifestPassengerInfoTable
 import akka.actor.{ActorRef, ActorSystem}
 import akka.stream.scaladsl.{Keep, Sink, Source}

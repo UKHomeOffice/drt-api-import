@@ -1,4 +1,4 @@
-package advancepassengerinfo.importer
+package advancepassengerinfo.importer.processor
 
 import advancepassengerinfo.importer.persistence.Persistence
 import advancepassengerinfo.importer.provider.Manifests

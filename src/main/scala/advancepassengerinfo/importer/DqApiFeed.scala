@@ -1,5 +1,6 @@
 package advancepassengerinfo.importer
 
+import advancepassengerinfo.importer.processor.DqFileProcessor
 import advancepassengerinfo.importer.provider.FileNames
 import akka.NotUsed
 import akka.stream.scaladsl.Source
