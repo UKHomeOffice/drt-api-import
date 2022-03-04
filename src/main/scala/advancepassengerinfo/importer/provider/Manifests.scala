@@ -4,9 +4,7 @@ import advancepassengerinfo.importer.parser.JsonManifestParser
 import advancepassengerinfo.manifests.VoyageManifest
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import com.typesafe.scalalogging.Logger
 
-import java.io.InputStream
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.zip.ZipInputStream
 import scala.collection.mutable.ArrayBuffer
@@ -23,29 +21,21 @@ case class ZippedManifests(fileProvider: FileAsStream)
   override def tryManifests(fileName: String): Source[Try[Seq[(String, Try[VoyageManifest])]], NotUsed] =
     Source
       .future(zipInputStream(fileName))
-      .map {
-        case Some(stream) => Try(extractManifests(stream))
-        case None => Failure(new Exception(s"Failed to extract zip"))
-      }
+      .map(stream => Try(extractManifests(stream)))
       .recover {
         case t => Failure(t)
       }
 
-  private def zipInputStream(objectKey: String): Future[Option[ZipInputStream]] =
-    inputStream(objectKey).map(_.map(stream => new ZipInputStream(stream)))
-
-  private def inputStream(objectKey: String): Future[Option[InputStream]] =
+  private def zipInputStream(objectKey: String): Future[ZipInputStream] =
     fileProvider
       .asInputStream(objectKey)
-      .map(Option(_))
+      .map(new ZipInputStream(_))
 
   private def extractManifests(zipInputStream: ZipInputStream): List[(String, Try[VoyageManifest])] =
     LazyList
       .continually(zipInputStream.getNextEntry)
       .takeWhile(_ != null)
-      .map { zipEntry =>
-        (zipEntry.getName, readStreamToString(zipInputStream))
-      }
+      .map(zipEntry => (zipEntry.getName, readStreamToString(zipInputStream)))
       .map {
         case (jsonFileName, jsonFileContent) =>
           (jsonFileName, JsonManifestParser.parseVoyagePassengerInfo(jsonFileContent))
