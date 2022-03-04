@@ -5,24 +5,21 @@ import advancepassengerinfo.manifests.VoyageManifest
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.typesafe.scalalogging.Logger
-import software.amazon.awssdk.core.async.AsyncResponseTransformer
-import software.amazon.awssdk.services.s3.S3AsyncClient
-import software.amazon.awssdk.services.s3.model.{GetObjectRequest, GetObjectResponse}
 
 import java.io.InputStream
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.zip.ZipInputStream
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{ExecutionContext, Future}
-import scala.jdk.FutureConverters.CompletionStageOps
 import scala.util.{Failure, Try}
+
 
 trait ManifestsProvider {
   def tryManifests(fileName: String): Source[Try[Seq[(String, Try[VoyageManifest])]], NotUsed]
 }
 
-case class S3ZippedManifestsProvider(s3Client: S3AsyncClient, bucket: String)
-                                    (implicit ec: ExecutionContext) extends ManifestsProvider {
+case class ZippedManifestsProvider(fileProvider: FileAsStream)
+                                  (implicit ec: ExecutionContext) extends ManifestsProvider {
   private val log = Logger(getClass)
 
   override def tryManifests(fileName: String): Source[Try[Seq[(String, Try[VoyageManifest])]], NotUsed] =
@@ -32,37 +29,19 @@ case class S3ZippedManifestsProvider(s3Client: S3AsyncClient, bucket: String)
         case Some(stream) => Try(extractManifests(stream))
         case None => Failure(new Exception(s"Failed to extract zip"))
       }
-
-  def zipInputStream(objectKey: String): Future[Option[ZipInputStream]] =
-    inputStream(objectKey)
-      .map { maybeStream =>
-        maybeStream.map(stream => new ZipInputStream(stream))
-      }
       .recover {
-        case t =>
-          log.error(s"Failed to get $objectKey from $bucket", t)
-          None
+        case t => Failure(t)
       }
 
-  private def inputStream(objectKey: String): Future[Option[InputStream]] = {
-    s3Client
-      .getObject(
-        buildGetObjectRequest(objectKey),
-        AsyncResponseTransformer.toBytes[GetObjectResponse]
-      )
-      .asScala
-      .map(response => Option(response.asInputStream()))
-      .recover {
-        case t =>
-          log.error(s"Failed to get $objectKey from $bucket", t)
-          None
-      }
-  }
+  private def zipInputStream(objectKey: String): Future[Option[ZipInputStream]] =
+    inputStream(objectKey).map(_.map(stream => new ZipInputStream(stream)))
 
-  private def buildGetObjectRequest(objectKey: String) =
-    GetObjectRequest.builder().bucket(bucket).key(objectKey).build()
+  private def inputStream(objectKey: String): Future[Option[InputStream]] =
+    fileProvider
+      .asInputStream(objectKey)
+      .map(Option(_))
 
-  def extractManifests(zipInputStream: ZipInputStream): Seq[(String, Try[VoyageManifest])] =
+  private def extractManifests(zipInputStream: ZipInputStream): List[(String, Try[VoyageManifest])] =
     LazyList
       .continually(zipInputStream.getNextEntry)
       .takeWhile(_ != null)
@@ -73,8 +52,9 @@ case class S3ZippedManifestsProvider(s3Client: S3AsyncClient, bucket: String)
         case (jsonFileName, jsonFileContent) =>
           (jsonFileName, JsonManifestParser.parseVoyagePassengerInfo(jsonFileContent))
       }
+      .toList
 
-  def readStreamToString(zipInputStream: ZipInputStream): String = {
+  private def readStreamToString(zipInputStream: ZipInputStream): String = {
     val buffer = new Array[Byte](4096)
     val stringBuffer = new ArrayBuffer[Byte]()
     var len: Int = zipInputStream.read(buffer)

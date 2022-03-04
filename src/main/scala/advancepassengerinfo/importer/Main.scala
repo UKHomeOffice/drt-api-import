@@ -17,6 +17,7 @@ import java.util.TimeZone
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
 
+
 object PostgresTables extends {
   val profile = PostgresProfile
 } with Tables
@@ -49,7 +50,8 @@ object Main extends App {
 
   val s3FileNamesProvider = S3FileNamesProviderImpl(s3Client, bucketName)
   val fileNamesProvider = DqFileNameProvider(s3FileNamesProvider)
-  val manifestsProvider = S3ZippedManifestsProvider(s3Client, bucketName)
+  val s3FileAsStream = S3FileAsStream(s3Client, bucketName)
+  val manifestsProvider = ZippedManifestsProvider(s3FileAsStream)
   val persistence = PersistenceImp(PostgresDb)
   val feed = DqApiFeedImpl(fileNamesProvider, DqFileProcessorImpl(manifestsProvider, persistence), 1.second)
 
@@ -79,3 +81,4 @@ object PostgresDb extends Db {
   val tables: PostgresTables.type = PostgresTables
   val con: profile.backend.Database = tables.profile.backend.Database.forConfig("db")
 }
+

@@ -21,10 +21,7 @@ case class DqApiFeedImpl(fileNameProvider: DqFileNameProvider,
     Source
       .unfoldAsync((lastFileName, List[String]())) { case (lastFileName, lastFiles) =>
         fileNameProvider.markerAndNextFileNames(lastFileName).map {
-          case (nextFetch, newFiles) =>
-            log.info(s"from $lastFileName, new files: $newFiles")
-            log.info(s"next fetch: $nextFetch")
-            Option((nextFetch, newFiles), (lastFileName, lastFiles))
+          case (nextFetch, newFiles) => Option((nextFetch, newFiles), (lastFileName, lastFiles))
         }
       }
       .log("filenames")

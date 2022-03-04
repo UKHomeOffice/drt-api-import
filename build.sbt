@@ -32,6 +32,8 @@ lazy val root = (project in file("."))
     )).value,
     Test / parallelExecution := false,
     Test / javaOptions += "-Duser.timezone=UTC",
+    coverageEnabled := true,
+    coverageExcludedPackages := "<empty>;.*Main.*"
   )
   .enablePlugins(DockerPlugin)
   .enablePlugins(AshScriptPlugin)
