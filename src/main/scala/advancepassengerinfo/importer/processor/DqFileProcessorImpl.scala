@@ -58,8 +58,8 @@ case class DqFileProcessorImpl(manifestsProvider: Manifests, persistence: Persis
                 persistence
                   .persistManifest(jsonFileName, manifest)
                   .flatMap {
-                    case Some(rowCount) =>
-                      persistSuccessfulJson(zipFileName, jsonFileName, manifest, rowCount).map(_ => (total + 1, success + 1))
+                    case Some(_) =>
+                      persistSuccessfulJson(zipFileName, jsonFileName, manifest).map(_ => (total + 1, success + 1))
                     case None =>
                       persistFailedJson(zipFileName, jsonFileName).map(_ => (total + 1, success))
                   }
@@ -67,7 +67,7 @@ case class DqFileProcessorImpl(manifestsProvider: Manifests, persistence: Persis
           }
       }
 
-  private def persistSuccessfulJson(zipFileName: String, jsonFileName: String, manifest: VoyageManifest, rowCount: Int): Future[Int] = {
+  private def persistSuccessfulJson(zipFileName: String, jsonFileName: String, manifest: VoyageManifest): Future[Int] = {
     val isSuspicious = scheduledIsSuspicious(zipFileName, manifest)
     persistence.persistJsonFile(zipFileName, jsonFileName, successful = true, dateIsSuspicious = isSuspicious)
   }
