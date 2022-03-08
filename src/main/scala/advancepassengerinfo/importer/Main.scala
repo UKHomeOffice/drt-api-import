@@ -12,6 +12,7 @@ import com.typesafe.scalalogging.Logger
 import drtlib.SDate
 import slick.jdbc.PostgresProfile
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 
 import java.util.TimeZone
@@ -46,6 +47,7 @@ object Main extends App {
 
     S3AsyncClient.builder()
       .credentialsProvider(credentialsProvider)
+      .region(Region.EU_WEST_2)
       .build()
   }
 
