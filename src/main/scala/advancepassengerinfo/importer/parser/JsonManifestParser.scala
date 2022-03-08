@@ -7,8 +7,6 @@ import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 import scala.util.Try
 
 object JsonManifestParser {
-  val log = Logger(getClass)
-
   def parseVoyagePassengerInfo(content: String): Try[VoyageManifest] = {
     import FlightPassengerInfoProtocol._
     import spray.json._
@@ -29,5 +27,4 @@ object JsonManifestParser {
     )
     implicit val passengerInfoResponseConverter: RootJsonFormat[VoyageManifest] = jsonFormat8(VoyageManifest)
   }
-
 }

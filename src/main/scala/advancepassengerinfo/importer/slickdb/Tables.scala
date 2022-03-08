@@ -37,15 +37,7 @@ trait Tables {
                                             nationality_country_code: String,
                                             passenger_identifier: String,
                                             in_transit: Boolean,
-                                            jsonFile: String)
-
-  /** GetResult implicit for fetching ArrivalRow objects using plain SQL queries */
-  implicit def GetResultVoyageManifestPassengerInfoRow(implicit e0: GR[String], e1: GR[java.sql.Timestamp], e2: GR[Int]): GR[VoyageManifestPassengerInfoRow] = GR {
-    prs =>
-      import prs._
-      VoyageManifestPassengerInfoRow.tupled((<<[String], <<[String], <<[String], <<[Int], <<[String], <<[java.sql.Timestamp], <<[Int], <<[Int], <<[String], <<[String], <<[String], <<[Int], <<[String], <<[String], <<[String], <<[String], <<[String], <<[Boolean], <<[String]))
-  }
-
+                                            json_file: String)
   private val maybeSchema = profile match {
     case _: PostgresProfile =>
       Some("public")

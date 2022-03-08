@@ -4,6 +4,7 @@ target
 .~*
 .#*
 *.DS_Store
+.bsp/
 
 # sbt specific
 .sbtopts

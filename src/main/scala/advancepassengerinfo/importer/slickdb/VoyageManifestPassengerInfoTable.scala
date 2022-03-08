@@ -1,24 +1,20 @@
 package advancepassengerinfo.importer.slickdb
 
-import java.sql.Timestamp
-
-import advancepassengerinfo.importer.parser.JsonManifestParser
 import advancepassengerinfo.manifests.{PassengerInfo, VoyageManifest}
-import com.typesafe.scalalogging.Logger
 
+import java.sql.Timestamp
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 
 
 case class VoyageManifestPassengerInfoTable(tables: Tables) {
-  val log = Logger(getClass)
-
   import tables.profile.api._
   import tables.{VoyageManifestPassengerInfo, VoyageManifestPassengerInfoRow}
 
-  def rowsToInsert(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, jsonFile: String)(implicit ec: ExecutionContext): DBIOAction[Unit, NoStream, Effect.Write] = {
+  def rowsToInsert(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, jsonFile: String)
+                  (implicit ec: ExecutionContext): (Int, DBIOAction[Unit, NoStream, Effect.Write]) = {
     val rows = voyageManifestRows(vm, dayOfWeek, weekOfYear, jsonFile)
-    DBIO.seq(VoyageManifestPassengerInfo ++= rows)
+    (rows.size, DBIO.seq(VoyageManifestPassengerInfo ++= rows))
   }
 
   def voyageManifestRows(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, jsonFile: String): List[VoyageManifestPassengerInfoRow] = {
@@ -50,7 +46,7 @@ case class VoyageManifestPassengerInfoTable(tables: Tables) {
         case "Y" => true
         case _ => false
       },
-      jsonFile = jsonFile
+      json_file = jsonFile
     )
   }
 
