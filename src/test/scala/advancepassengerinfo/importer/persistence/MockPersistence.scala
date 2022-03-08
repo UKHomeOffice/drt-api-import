@@ -29,4 +29,6 @@ case class MockPersistence(probe: ActorRef) extends Persistence {
   }
 
   override def lastPersistedFileName: Future[Option[String]] = Future.successful(Option("_"))
+
+  override def jsonHasBeenProcessed(zipFileName: String, jsonFileName: String): Future[Boolean] = Future.successful(false)
 }

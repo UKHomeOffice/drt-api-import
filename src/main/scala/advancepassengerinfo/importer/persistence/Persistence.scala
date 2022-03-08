@@ -7,7 +7,8 @@ import com.typesafe.scalalogging.Logger
 import drtlib.SDate
 
 import java.sql.Timestamp
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 trait Persistence {
   def persistManifest(jsonFileName: String, manifest: VoyageManifest): Future[Option[Int]]
@@ -17,11 +18,16 @@ trait Persistence {
   def persistZipFile(zipFileName: String, successful: Boolean): Future[Boolean]
 
   def lastPersistedFileName: Future[Option[String]]
+
+  def jsonHasBeenProcessed(zipFileName: String, jsonFileName: String): Future[Boolean]
 }
 
-case class PersistenceImp(db: Db)
-                         (implicit ec: ExecutionContext) extends Persistence {
+trait DbPersistence extends Persistence {
   private val log = Logger(getClass)
+
+  val db: Db
+
+  implicit val ec: ExecutionContext
 
   val manifestTable: VoyageManifestPassengerInfoTable = VoyageManifestPassengerInfoTable(db.tables)
 
@@ -74,4 +80,13 @@ case class PersistenceImp(db: Db)
     val sourceFileNamesQuery = db.tables.ProcessedJson.map(_.zip_file_name)
     con.run(sourceFileNamesQuery.max.result)
   }
+
+  override def jsonHasBeenProcessed(zipFileName: String, jsonFileName: String): Future[Boolean] = {
+    val query = db.tables.ProcessedJson.filter(r => r.zip_file_name === zipFileName && r.json_file_name === jsonFileName)
+    con.run(query.exists.result)
+  }
+}
+
+case class DbPersistenceImpl(db: Db)(implicit executionContext: ExecutionContext) extends DbPersistence {
+  override implicit val ec: ExecutionContext = executionContext
 }

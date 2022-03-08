@@ -44,19 +44,27 @@ case class DqFileProcessorImpl(manifestsProvider: Manifests, persistence: Persis
   private def persistManifests(zipFileName: String, manifestTries: Seq[(String, Try[VoyageManifest])]): Source[(Int, Int), NotUsed] =
     Source(manifestTries)
       .foldAsync((0, 0)) {
-        case ((total, success), (jsonFileName, Failure(exception))) =>
-          log.error(s"Failed to extract manifest from $jsonFileName in $zipFileName: ${exception.getMessage}")
-          persistFailedJson(zipFileName, jsonFileName).map(_ => (total + 1, success))
-
-        case ((total, success), (jsonFileName, Success(manifest))) =>
-          persistence
-            .persistManifest(jsonFileName, manifest)
-            .flatMap {
-              case Some(rowCount) =>
-                persistSuccessfulJson(zipFileName, jsonFileName, manifest, rowCount).map(_ => (total + 1, success + 1))
-              case None =>
+        case ((total, success), (jsonFileName, tryManifest)) =>
+          persistence.jsonHasBeenProcessed(zipFileName, jsonFileName).flatMap { alreadyProcessed =>
+            (alreadyProcessed, tryManifest) match {
+              case (true, _) =>
+                log.warn(s"Skipping $jsonFileName as it's already been processed as part of $zipFileName")
+                Future.successful((total, success))
+              case (false, Failure(exception)) =>
+                log.error(s"Failed to extract manifest from $jsonFileName in $zipFileName: ${exception.getMessage}")
                 persistFailedJson(zipFileName, jsonFileName).map(_ => (total + 1, success))
+
+              case (false, Success(manifest)) =>
+                persistence
+                  .persistManifest(jsonFileName, manifest)
+                  .flatMap {
+                    case Some(rowCount) =>
+                      persistSuccessfulJson(zipFileName, jsonFileName, manifest, rowCount).map(_ => (total + 1, success + 1))
+                    case None =>
+                      persistFailedJson(zipFileName, jsonFileName).map(_ => (total + 1, success))
+                  }
             }
+          }
       }
 
   private def persistSuccessfulJson(zipFileName: String, jsonFileName: String, manifest: VoyageManifest, rowCount: Int): Future[Int] = {

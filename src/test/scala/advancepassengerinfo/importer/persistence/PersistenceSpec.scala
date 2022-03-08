@@ -1,12 +1,12 @@
 package advancepassengerinfo.importer.persistence
 
-import advancepassengerinfo.importer.{InMemoryDatabase, PostgresDateHelpers}
 import advancepassengerinfo.importer.InMemoryDatabase.H2Tables
 import advancepassengerinfo.importer.slickdb.{Builder, VoyageManifestPassengerInfoTable}
+import advancepassengerinfo.importer.{InMemoryDatabase, PostgresDateHelpers}
 import advancepassengerinfo.manifests.{PassengerInfo, VoyageManifest}
 import akka.actor.ActorSystem
 import akka.stream.Materializer
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.Source
 import drtlib.SDate
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -15,7 +15,7 @@ import java.sql.Timestamp
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
 import scala.language.postfixOps
-import scala.util.{Failure, Success, Try}
+import scala.util.Success
 
 
 class PersistenceSpec extends AnyWordSpec with Matchers with Builder {
@@ -27,7 +27,7 @@ class PersistenceSpec extends AnyWordSpec with Matchers with Builder {
 
   import advancepassengerinfo.importer.InMemoryDatabase.tables.profile.api._
 
-  val persistence: Persistence = PersistenceImp(InMemoryDatabase)
+  val persistence: Persistence = DbPersistenceImpl(InMemoryDatabase)
 
   private val schDateStr = "2019-01-01"
   private val schDate = SDate(schDateStr)

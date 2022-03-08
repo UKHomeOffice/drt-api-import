@@ -1,7 +1,7 @@
 package advancepassengerinfo.importer
 
 import advancepassengerinfo.importer.PostgresTables.profile
-import advancepassengerinfo.importer.persistence.PersistenceImp
+import advancepassengerinfo.importer.persistence.DbPersistenceImpl
 import advancepassengerinfo.importer.processor.DqFileProcessorImpl
 import advancepassengerinfo.importer.provider._
 import advancepassengerinfo.importer.slickdb.Tables
@@ -52,9 +52,9 @@ object Main extends App {
   val s3FileNamesProvider = S3FileNames(s3Client, bucketName)
   val s3FileAsStream = S3FileAsStream(s3Client, bucketName)
   val manifestsProvider = ZippedManifests(s3FileAsStream)
-  val persistence = PersistenceImp(PostgresDb)
+  val persistence = DbPersistenceImpl(PostgresDb)
   val zipProcessor = DqFileProcessorImpl(manifestsProvider, persistence)
-  val feed = DqApiFeedImpl(s3FileNamesProvider, zipProcessor, 1.second)
+  val feed = DqApiFeedImpl(s3FileNamesProvider, zipProcessor, 1.minute)
 
   val eventual = Source
     .future(persistence.lastPersistedFileName)

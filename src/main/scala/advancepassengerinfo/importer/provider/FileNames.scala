@@ -14,6 +14,6 @@ trait FileNames {
 case class S3FileNames(s3Client: S3AsyncClient, bucket: String)
                       (implicit ec: ExecutionContext) extends FileNames {
   override val nextFiles: String => Future[List[String]] = (lastFile: String) => s3Client
-    .listObjects(ListObjectsRequest.builder().bucket(bucket).maxKeys(5).marker(lastFile).build()).asScala
+    .listObjects(ListObjectsRequest.builder().bucket(bucket).maxKeys(100).marker(lastFile).build()).asScala
     .map(_.contents().asScala.map(_.key()).toList)
 }
