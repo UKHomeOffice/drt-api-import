@@ -39,7 +39,7 @@ CREATE TABLE public.processed_json (
 CREATE INDEX processed_json_zip_file_name ON public.processed_json (zip_file_name);
 CREATE INDEX processed_json_json_file_name ON public.processed_json (json_file_name);
 CREATE INDEX processed_json_suspicious_date ON public.processed_json (suspicious_date);
-CREATE INDEX processed_json_succcess ON public.processed_json (success);
+CREATE INDEX processed_json_success ON public.processed_json (success);
 
 
 CREATE TABLE public.processed_zip (
@@ -49,4 +49,26 @@ CREATE TABLE public.processed_zip (
 );
 
 CREATE INDEX processed_zip_zip_file_name ON public.processed_zip (zip_file_name);
-CREATE INDEX processed_zip_succcess ON public.processed_zip (success);
+CREATE INDEX processed_zip_success ON public.processed_zip (success);
+CREATE INDEX processed_zip_processed_at ON public.processed_zip (processed_at);
+
+SELECT
+  vm.arrival_port_code, vm.departure_port_code, vm.voyage_number, vm.scheduled_date, pz.processed_at
+FROM processed_zip pz
+INNER JOIN processed_json pj ON pz.zip_file_name=pj.zip_file_name
+INNER JOIN voyage_manifest_passenger_info vm ON vm.json_file = pj.json_file_name
+WHERE pz.processed_at>='2022-03-09T17:00' AND vm.arrival_port_code='LHR'
+GROUP BY vm.arrival_port_code, vm.departure_port_code, vm.carrier_code, vm.voyage_number, vm.scheduled_date, pz.processed_at
+ORDER BY pz.processed_at;
+
+SELECT
+    vm.departure_port_code, vm.voyage_number, vm.scheduled_date, pz.processed_at
+FROM processed_zip pz
+         INNER JOIN processed_json pj ON pz.zip_file_name = pj.zip_file_name
+         INNER JOIN voyage_manifest_passenger_info vm ON vm.json_file = pj.json_file_name
+WHERE
+        pz.processed_at >= '2022-03-09T17:00'
+  AND vm.arrival_port_code = ${destinationPortCode.iata}
+  AND event_code = 'DC'
+GROUP BY vm.departure_port_code, vm.voyage_number, vm.scheduled_date, pz.processed_at
+ORDER BY pz.processed_at
