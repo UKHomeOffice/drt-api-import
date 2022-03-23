@@ -10,4 +10,5 @@ object Dependencies {
   val h2DatabaseVersion = "2.1.210"
   val scalaLoggingVersion = "3.9.4"
   val janinoVersion = "3.1.6"
+  val censorinus = "2.1.16"
 }

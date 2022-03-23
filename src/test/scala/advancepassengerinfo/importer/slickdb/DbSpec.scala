@@ -51,16 +51,4 @@ class DbSpec extends AnyWordSpec with Matchers with Builder {
       result should be(Some(1))
     }
   }
-
-  "A request for week of the year" should {
-    "give me 52 when given a date falling in the last week of the year (according to h2's definitions)" in {
-      val date = new Timestamp(SDate("2018-12-30T12:00:00Z").millisSinceEpoch)
-      val sql = vmTable.dayOfWeekAndWeekOfYear(date)
-      val result = Await.result(InMemoryDatabase.con.run(sql), 1 second).collect {
-        case (_, woy) => woy
-      }
-
-      result should be(Some(52))
-    }
-  }
 }
