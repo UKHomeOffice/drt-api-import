@@ -7,6 +7,7 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.{KillSwitches, UniqueKillSwitch}
 import akka.testkit.{TestKit, TestProbe}
+import metrics.MetricsCollectorLike
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -33,6 +34,10 @@ case class MockFileNames(files: List[List[String]]) extends FileNames {
   }
 }
 
+object MockStatsDCollector extends MetricsCollectorLike {
+  override def counter(name: String, value: Double): Unit = {}
+}
+
 class DqApiFeedImplSpec extends TestKit(ActorSystem("MySpec"))
   with AnyWordSpecLike
   with Matchers
@@ -53,7 +58,7 @@ class DqApiFeedImplSpec extends TestKit(ActorSystem("MySpec"))
       val batchedFileNames = List(List("a", "b"), List("c", "d"), List("e", "f"))
       val mockFileNames = MockFileNames(batchedFileNames)
       val mockProcessor = MockDqFileProcessor(filesProbe.ref)
-      val importer = DqApiFeedImpl(mockFileNames, mockProcessor, 100.millis)
+      val importer = DqApiFeedImpl(mockFileNames, mockProcessor, 100.millis, MockStatsDCollector)
 
       val killSwitch: UniqueKillSwitch = importer.processFilesAfter("").viaMat(KillSwitches.single)(Keep.right).toMat(Sink.ignore)(Keep.left).run()
 

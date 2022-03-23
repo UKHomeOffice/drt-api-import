@@ -29,6 +29,7 @@ lazy val root = (project in file("."))
       "com.typesafe.slick" %% "slick-hikaricp" % slickVersion,
       "io.spray" %% "spray-json" % sprayJsonVersion,
       "org.postgresql" % "postgresql" % postgresqlVersion,
+      "com.github.gphat" %% "censorinus" % censorinus
     )).value,
     Test / parallelExecution := false,
     Test / javaOptions += "-Duser.timezone=UTC",

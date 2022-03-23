@@ -10,6 +10,7 @@ import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.Logger
 import drtlib.SDate
+import metrics.StatsDMetrics
 import slick.jdbc.PostgresProfile
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
@@ -56,7 +57,7 @@ object Main extends App {
   val manifestsProvider = ZippedManifests(s3FileAsStream)
   val persistence = DbPersistenceImpl(PostgresDb)
   val zipProcessor = DqFileProcessorImpl(manifestsProvider, persistence)
-  val feed = DqApiFeedImpl(s3FileNamesProvider, zipProcessor, 1.minute)
+  val feed = DqApiFeedImpl(s3FileNamesProvider, zipProcessor, 1.minute, StatsDMetrics)
 
   val eventual = Source
     .future(persistence.lastPersistedFileName)
