@@ -16,8 +16,9 @@ WORKDIR /opt/docker
 COPY --from=stage0 --chown=drt:root /2/opt/docker /opt/docker
 COPY --from=stage0 --chown=drt:root /4/opt/docker /opt/docker
 
-RUN apk --update add bash less curl
-RUN rm -rf /var/cache/apk/*
+RUN apt-get update
+RUN apt-get install -y curl
+RUN rm -rf /var/cache/apt/*
 
 RUN mkdir -p /home/drt/.postgresql
 RUN curl https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem > /home/drt/.postgresql/root.crt
