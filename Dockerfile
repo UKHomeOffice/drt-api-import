@@ -15,6 +15,13 @@ RUN id -u drt 1>/dev/null 2>&1 || (( getent group 0 1>/dev/null 2>&1 || ( type g
 WORKDIR /opt/docker
 COPY --from=stage0 --chown=drt:root /2/opt/docker /opt/docker
 COPY --from=stage0 --chown=drt:root /4/opt/docker /opt/docker
+
+RUN apk --update add bash less curl
+RUN rm -rf /var/cache/apk/*
+
+RUN mkdir -p /home/drt/.postgresql
+RUN curl https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem > /home/drt/.postgresql/root.crt
+
 USER 1001:0
 ENTRYPOINT ["/opt/docker/bin/drt-api-import"]
 CMD []
