@@ -1,6 +1,6 @@
 import Dependencies._
 
-ThisBuild / scalaVersion := "2.13.8"
+ThisBuild / scalaVersion := "2.13.10"
 ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / organization := "uk.gov.homeoffice"
 ThisBuild / organizationName := "drt"
@@ -14,9 +14,9 @@ lazy val root = (project in file("."))
       "com.h2database" % "h2" % h2DatabaseVersion % Test,
       "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion % Test,
 
-      "ch.qos.logback.contrib" % "logback-json-classic" % "0.1.5",
-      "ch.qos.logback.contrib" % "logback-jackson" % "0.1.5",
-      "com.fasterxml.jackson.core" % "jackson-databind" % "2.10.0",
+      "ch.qos.logback.contrib" % "logback-json-classic" % logbackVersion,
+      "ch.qos.logback.contrib" % "logback-jackson" % logbackVersion,
+      "com.fasterxml.jackson.core" % "jackson-databind" % jacksonDatabindVersion,
       "org.codehaus.janino" % "janino" % janinoVersion,
 
       "com.typesafe" % "config" % typesafeConfigVersion,
@@ -29,12 +29,14 @@ lazy val root = (project in file("."))
       "com.typesafe.slick" %% "slick-hikaricp" % slickVersion,
       "io.spray" %% "spray-json" % sprayJsonVersion,
       "org.postgresql" % "postgresql" % postgresqlVersion,
-      "com.github.gphat" %% "censorinus" % censorinus
+      "com.github.gphat" %% "censorinus" % censorinusVersion,
     )).value,
     Test / parallelExecution := false,
     Test / javaOptions += "-Duser.timezone=UTC",
-//    coverageEnabled := true,
-    coverageExcludedPackages := "<empty>;.*Main.*"
+    //    coverageEnabled := true,
+    coverageExcludedPackages := "<empty>;.*Main.*",
+
+    dockerBaseImage := "openjdk:11-jre-slim-buster",
   )
   .enablePlugins(DockerPlugin)
   .enablePlugins(AshScriptPlugin)

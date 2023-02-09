@@ -8,41 +8,40 @@ platform:
   arch: amd64
 
 steps:
+  - name: build-and-test
+    pull: if-not-exists
+    image: quay.io/ukhomeofficedigital/scala-sbt:latest
+    commands:
+      - /root/entrypoint.sh
+      - sbt test docker:stage
+    environment:
+      ARTIFACTORY_PASSWORD:
+        from_secret: ARTIFACTORY_PASSWORD
+      ARTIFACTORY_USERNAME: scala-test-token
+    when:
+      branch:
+        - ${DRONE_BRANCH}
+      event:
+        - push
 
-- name: build
-  pull: if-not-exists
-  image: quay.io/ukhomeofficedigital/scala-sbt:latest
-  commands:
-    - /root/entrypoint.sh
-    - sbt test docker:stage
-  environment:
-    ARTIFACTORY_PASSWORD:
-      from_secret: ARTIFACTORY_PASSWORD
-    ARTIFACTORY_USERNAME: scala-test-token
-  when:
-    branch:
-      - ${DRONE_BRANCH}
-    event:
-      - push
-
-- name: publish
-  image: plugins/ecr
-  environment:
-    AWS_REGION: eu-west-2
-  settings:
-    access_key:
-      from_secret: AWS_ACCESS_KEY_ID
-    secret_key:
-      from_secret: AWS_SECRET_ACCESS_KEY
-    repo: drt/drt-api-import
-    registry: 340268328991.dkr.ecr.eu-west-2.amazonaws.com
-    tags:
-      - B${DRONE_BUILD_NUMBER}
-      - latest
-  when:
-    event:
-      - push
-  depends_on:
-    - build
+  - name: publish
+    image: plugins/ecr
+    environment:
+      AWS_REGION: eu-west-2
+    settings:
+      access_key:
+        from_secret: AWS_ACCESS_KEY_ID
+      secret_key:
+        from_secret: AWS_SECRET_ACCESS_KEY
+      repo: drt/drt-api-import
+      registry: 340268328991.dkr.ecr.eu-west-2.amazonaws.com
+      tags:
+        - B${DRONE_BUILD_NUMBER}
+        - latest
+    when:
+      event:
+        - push
+    depends_on:
+      - build-and-test
 
 ...
