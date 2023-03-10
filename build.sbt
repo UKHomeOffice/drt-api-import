@@ -34,7 +34,7 @@ lazy val root = (project in file("."))
     )).value,
     Test / parallelExecution := false,
     Test / javaOptions += "-Duser.timezone=UTC",
-    //    coverageEnabled := true,
+//    coverageEnabled := true,
     coverageExcludedPackages := "<empty>;.*Main.*",
 
     dockerBaseImage := "openjdk:11-jre-slim-buster",

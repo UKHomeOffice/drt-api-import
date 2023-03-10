@@ -49,6 +49,7 @@ steps:
     image: quay.io/ukhomeofficedigital/scala-sbt-nodejs:v1.0.0
     commands:
       - /root/entrypoint.sh
+      - sbt coverageReport
       - sbt -ivy ./.ivy2 dependencyCheck
       - sbt scalastyle | true
       - sbt scapegoat | true
