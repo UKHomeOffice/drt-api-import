@@ -4,6 +4,7 @@ ThisBuild / scalaVersion := "2.13.10"
 ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / organization := "uk.gov.homeoffice"
 ThisBuild / organizationName := "drt"
+ThisBuild / scapegoatVersion := "2.1.1"
 
 lazy val root = (project in file("."))
   .settings(
@@ -33,7 +34,7 @@ lazy val root = (project in file("."))
     )).value,
     Test / parallelExecution := false,
     Test / javaOptions += "-Duser.timezone=UTC",
-    //    coverageEnabled := true,
+//    coverageEnabled := true,
     coverageExcludedPackages := "<empty>;.*Main.*",
 
     dockerBaseImage := "openjdk:11-jre-slim-buster",
