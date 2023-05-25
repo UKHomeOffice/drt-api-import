@@ -2,11 +2,6 @@ ThisBuild / libraryDependencySchemes ++= Seq(
   "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
 )
 
-val pluginSbtScoverageVersion = sys.props.getOrElse(
-  "plugin.sbtscoverage.version", "2.0.6"
-)
-
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % pluginSbtScoverageVersion)
 addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.2.0")
 addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.9.16")
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "2.0.6")
