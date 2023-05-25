@@ -1,5 +1,5 @@
 object Dependencies {
-  val scalatestVersion = "3.2.15"
+  val scalatestVersion = "3.2.16"
   val typesafeConfigVersion = "1.4.2"
   val akkaVersion = "2.7.0"
   val awsSdkS3Version = "2.19.33"
