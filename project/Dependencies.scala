@@ -7,7 +7,7 @@ object Dependencies {
   val slickVersion = "3.4.1"
   val sprayJsonVersion = "1.3.6"
   val postgresqlVersion = "42.5.3"
-  val h2DatabaseVersion = "2.1.214"
+  val h2DatabaseVersion = "2.2.222"
   val scalaLoggingVersion = "3.9.5"
   val janinoVersion = "3.1.9"
   val censorinusVersion = "2.1.16"
