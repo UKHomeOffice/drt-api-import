@@ -26,9 +26,12 @@ case class DqApiFeedImpl(fileNamesProvider: FileNames,
       .unfoldAsync((lastFileName, List[String]())) { case (lastFileName, lastFiles) =>
         markerAndNextFileNames(lastFileName).map {
           case (nextFetch, newFiles) => Option((nextFetch, newFiles), (lastFileName, lastFiles))
+        }.recover {
+          case t =>
+            log.error(s"Failed to get next files after $lastFileName", t)
+            None
         }
-      }
-      .throttle(1, throttle)
+      }.throttle(1, throttle)
       .map(_._2)
       .mapConcat(identity)
       .flatMapConcat { zipFileName =>
