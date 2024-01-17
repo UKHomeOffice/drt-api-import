@@ -2,8 +2,8 @@ package advancepassengerinfo.importer.processor
 
 import advancepassengerinfo.generator.ManifestGenerator
 import advancepassengerinfo.importer.persistence.MockPersistence.{JsonFileCall, ManifestCall, ZipFileCall}
-import advancepassengerinfo.importer.persistence.{DbPersistence, MockPersistence}
-import advancepassengerinfo.importer.provider.{Manifests, MockFileNames, MockStatsDCollector}
+import advancepassengerinfo.importer.persistence.{DbPersistence, MockPersistence, Persistence}
+import advancepassengerinfo.importer.provider.{FileNames, Manifests, MockFileNames, MockStatsDCollector}
 import advancepassengerinfo.importer.{Db, DqApiFeedImpl, InMemoryDatabase}
 import advancepassengerinfo.manifests.VoyageManifest
 import akka.NotUsed
@@ -29,7 +29,7 @@ case class MockManifests(manifestTries: List[List[Try[Seq[(String, Try[VoyageMan
   }
 }
 
-case class PersistenceWithProbe(val db: Db, probe: ActorRef)(implicit val ec: ExecutionContext) extends DbPersistence {
+case class PersistenceWithProbe(db: Db, probe: ActorRef)(implicit val ec: ExecutionContext) extends DbPersistence {
   override def persistManifest(jsonFileName: String, manifest: VoyageManifest): Future[Option[Int]] = {
     probe ! ManifestCall(jsonFileName, manifest)
     super.persistManifest(jsonFileName, manifest)
@@ -69,8 +69,9 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
   val manifest: VoyageManifest = ManifestGenerator.manifest()
   val jsonWithSuccessfulManifest: (String, Success[VoyageManifest]) = (jsonFileName, Success(manifest))
 
+  def singleZipMockProvider(jsonWithManifests: Seq[(String, Try[VoyageManifest])]): MockManifests = MockManifests(List(List(Success(jsonWithManifests))))
+
   "A DQ file processor" should {
-    def singleZipMockProvider(jsonWithManifests: Seq[(String, Try[VoyageManifest])]) = MockManifests(List(List(Success(jsonWithManifests))))
 
     "Persist a failed zip file" in {
       val probe = TestProbe("probe")
@@ -209,6 +210,68 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
       probe.expectMsg(ManifestCall(jsonFileName, manifest))
       probe.expectMsg(JsonFileCall("c", jsonFileName, successful = true, dateIsSuspicious = false))
       probe.expectMsg(ZipFileCall("c", successful = true))
+
+    }
+
+    "handle exceptions while getting nextFiles" in {
+      val mockFileNamesProvider = new FileNames {
+        override val nextFiles: String => Future[List[String]] = (previous: String) => Future.sequence(List(
+          Future.successful(List("1.zip", "2.zip")),
+          Future.failed(new Exception("next file exception")),
+          Future.successful(List("3.zip", "4.zip")),
+        )).map(_.flatten)
+      }
+
+      val probe = TestProbe("probe")
+      val mockPersistence = MockPersistence(probe.ref)
+
+      val manifests = Seq(
+        ("1.json", Success(manifest)),
+        ("2.json", Success(manifest)),
+      )
+      val processor = DqFileProcessorImpl(singleZipMockProvider(manifests), mockPersistence)
+      val dqApiFeed: DqApiFeedImpl = DqApiFeedImpl(
+        mockFileNamesProvider,
+        processor,
+        100.millis,
+        MockStatsDCollector
+      )
+
+      val result = Await.result(dqApiFeed.processFilesAfter("_").runWith(Sink.seq),1.second)
+
+      result should ===(Vector.empty)
+    }
+
+    "handle exception while persisting" in {
+      val mockPersistence = new Persistence {
+        override def persistManifest(jsonFileName: String, manifest: VoyageManifest): Future[Option[Int]] = Future.failed(new Exception("db exception"))
+
+        override def persistJsonFile(zipFileName: String, jsonFileName: String, successful: Boolean, dateIsSuspicious: Boolean): Future[Int] = Future.failed(new Exception("db exception"))
+
+        override def persistZipFile(zipFileName: String, successful: Boolean): Future[Boolean] = Future.failed(new Exception("db exception"))
+
+        override def lastPersistedFileName: Future[Option[String]] = Future.failed(new Exception("db exception"))
+
+        override def jsonHasBeenProcessed(zipFileName: String, jsonFileName: String): Future[Boolean] = Future.failed(new Exception("db exception"))
+      }
+
+      val manifests = Seq(
+        ("1.json", Success(manifest)),
+        ("2.json", Success(manifest)),
+        ("3.json", Success(manifest)),
+        ("4.json", Success(manifest)),
+      )
+      val processor = DqFileProcessorImpl(singleZipMockProvider(manifests), mockPersistence)
+      val dqApiFeed: DqApiFeedImpl = DqApiFeedImpl(
+        MockFileNames(List(List("1.zip", "2.zip"), List("3.zip", "4.zip"))),
+        processor,
+        100.millis,
+        MockStatsDCollector
+      )
+
+      val result = Await.result(dqApiFeed.processFilesAfter("_").runWith(Sink.seq),1.second)
+
+      result should ===(Vector.empty)
     }
   }
 }
