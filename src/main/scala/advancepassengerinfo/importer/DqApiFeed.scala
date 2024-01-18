@@ -1,5 +1,6 @@
 package advancepassengerinfo.importer
 
+import advancepassengerinfo.health.ProcessState
 import advancepassengerinfo.importer.processor.DqFileProcessor
 import advancepassengerinfo.importer.provider.FileNames
 import akka.NotUsed
@@ -17,7 +18,8 @@ trait DqApiFeed {
 case class DqApiFeedImpl(fileNamesProvider: FileNames,
                          fileProcessor: DqFileProcessor,
                          throttle: FiniteDuration,
-                         metricsCollector: MetricsCollectorLike)
+                         metricsCollector: MetricsCollectorLike,
+                         processState: ProcessState)
                         (implicit ec: ExecutionContext) extends DqApiFeed {
   private val log = Logger(getClass)
 
@@ -35,9 +37,11 @@ case class DqApiFeedImpl(fileNamesProvider: FileNames,
         fileProcessor.process(zipFileName)
           .map {
             case Some((total, successful)) =>
+              processState.update()
               log.info(s"$successful / $total manifests successfully processed from $zipFileName")
               metricsCollector.counter("api-dq-manifests-processed", successful)
             case None =>
+              processState.update()
               log.info(s"$zipFileName could not be processed")
               metricsCollector.counter("api-dq-zip-failure", 1)
           }
