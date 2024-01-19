@@ -1,21 +1,20 @@
 package advancepassengerinfo.health
 
 import akka.http.scaladsl.model.StatusCodes
-import scala.concurrent.ExecutionContext
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 
 object HealthRoute {
 
-  def checkHealth(processState: ProcessState)(implicit ec: ExecutionContext): Route =
+  def checkHealth(processState: ProcessState): Route =
     get {
-      if (processState.isLatest)
+      if (processState.hasCheckedSince)
         complete(StatusCodes.OK)
       else
-        complete((StatusCodes.InternalServerError, "KO"))
+        complete(StatusCodes.InternalServerError, "KO")
     }
 
-  def apply(processState: ProcessState)(implicit ec: ExecutionContext): Route =
+  def apply(processState: ProcessState): Route =
     pathPrefix("health-check") {
       checkHealth(processState)
     }

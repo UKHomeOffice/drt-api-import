@@ -27,7 +27,9 @@ case class DqApiFeedImpl(fileNamesProvider: FileNames,
     Source
       .unfoldAsync((lastFileName, List[String]())) { case (lastFileName, lastFiles) =>
         markerAndNextFileNames(lastFileName).map {
-          case (nextFetch, newFiles) => Option((nextFetch, newFiles), (lastFileName, lastFiles))
+          case (nextFetch, newFiles) =>
+            processState.setLastCheckedAt()
+            Option((nextFetch, newFiles), (lastFileName, lastFiles))
         }
       }
       .throttle(1, throttle)
@@ -37,11 +39,9 @@ case class DqApiFeedImpl(fileNamesProvider: FileNames,
         fileProcessor.process(zipFileName)
           .map {
             case Some((total, successful)) =>
-              processState.update()
               log.info(s"$successful / $total manifests successfully processed from $zipFileName")
               metricsCollector.counter("api-dq-manifests-processed", successful)
             case None =>
-              processState.update()
               log.info(s"$zipFileName could not be processed")
               metricsCollector.counter("api-dq-zip-failure", 1)
           }

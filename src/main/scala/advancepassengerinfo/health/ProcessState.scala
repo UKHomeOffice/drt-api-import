@@ -3,14 +3,14 @@ package advancepassengerinfo.health
 import java.time.{Duration, Instant}
 
 case class ProcessState() {
-   var healthState: Instant = Instant.now()
+  var healthState: Instant = Instant.now()
 
-  def isLatest: Boolean = {
-    val anHour = Duration.ofHours(1)
-    Duration.between(healthState, Instant.now()).compareTo(anHour) < 0
+  def hasCheckedSince: Boolean = {
+    val fiveMinutes = 5
+    Duration.between(healthState, Instant.now()).compareTo(Duration.ofMinutes(fiveMinutes)) < 0
   }
 
-  def update(): Unit = {
+  def setLastCheckedAt(): Unit = {
     healthState = Instant.now()
   }
 }

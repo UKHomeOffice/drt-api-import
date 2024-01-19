@@ -9,14 +9,14 @@ class ProcessStateTest extends AnyFlatSpec with Matchers {
 
   "ProcessState" should "return true for isLatest if the state is within the last hour" in {
     val processState = ProcessState()
-    processState.isLatest shouldBe true
+    processState.hasCheckedSince shouldBe true
   }
 
   it should "return false for isLatest if the state is more than an hour ago" in {
     val processState = ProcessState()
-    val oneHourAndOneMinuteAgo = Instant.now().minus(61, ChronoUnit.MINUTES)
+    val oneHourAndOneMinuteAgo = Instant.now().minus(6, ChronoUnit.MINUTES)
     processState.healthState = oneHourAndOneMinuteAgo
-    processState.isLatest shouldBe false
+    processState.hasCheckedSince shouldBe false
   }
 
   it should "update the state to the current time" in {
@@ -24,7 +24,7 @@ class ProcessStateTest extends AnyFlatSpec with Matchers {
     val beforeUpdate = Instant.now()
     val oneSecondInMillis = 1000
     Thread.sleep(oneSecondInMillis)
-    processState.update()
+    processState.setLastCheckedAt()
     val afterUpdate = processState.healthState
     afterUpdate should be > beforeUpdate
   }

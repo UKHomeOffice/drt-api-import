@@ -9,7 +9,7 @@ class HealthRouteTest extends AnyFlatSpec with Matchers with ScalatestRouteTest 
 
   "HealthRoute" should "return OK status if process state is latest" in {
     val mockProcessState = new ProcessState {
-      override def isLatest: Boolean = true
+      override def hasCheckedSince: Boolean = true
     }
 
     val route = HealthRoute(mockProcessState)
@@ -21,7 +21,7 @@ class HealthRouteTest extends AnyFlatSpec with Matchers with ScalatestRouteTest 
 
   it should "return InternalServerError status if process state is not latest" in {
     val mockProcessState = new ProcessState {
-      override def isLatest: Boolean = false
+      override def hasCheckedSince: Boolean = false
     }
 
     val route = HealthRoute(mockProcessState)
