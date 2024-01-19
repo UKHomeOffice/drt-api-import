@@ -4,13 +4,13 @@ import java.time.{Duration, Instant}
 import scala.concurrent.duration.FiniteDuration
 
 case class LastCheckedState() {
-  var lastCheckedAt: Instant = Instant.now()
+  var lastCheckedAt: Option[Instant] = None
 
   def hasCheckedSince(durationInMin: FiniteDuration): Boolean = {
-    Duration.between(lastCheckedAt, Instant.now()).compareTo(Duration.ofMillis(durationInMin.toMillis)) < 0
+    lastCheckedAt.exists(lca => Duration.between(lca, Instant.now()).compareTo(Duration.ofMillis(durationInMin.toMillis)) < 0)
   }
 
   def setLastCheckedAt(at:Instant): Unit = {
-    lastCheckedAt = at
+    lastCheckedAt = Some(at)
   }
 }

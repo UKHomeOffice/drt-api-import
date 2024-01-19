@@ -9,8 +9,15 @@ import scala.concurrent.duration.DurationInt
 
 class LastCheckedStateTest extends AnyFlatSpec with Matchers {
 
-  "LastCheckedState" should "return true for hasCheckedSince, if the lastCheckedAt is within the last 5 minutes" in {
+  "LastCheckedState" should "return false for hasCheckedSince, if the lastCheckedAt is not updated" in {
     val lastCheckedState = LastCheckedState()
+    lastCheckedState.hasCheckedSince(5.minutes) shouldBe false
+  }
+
+  it should "return true for hasCheckedSince, if the lastCheckedAt is exactly 5 minutes ago" in {
+    val lastCheckedState = LastCheckedState()
+    val fiveMinutesAgo = Instant.now().minus(4, ChronoUnit.MINUTES)
+    lastCheckedState.setLastCheckedAt(fiveMinutesAgo)
     lastCheckedState.hasCheckedSince(5.minutes) shouldBe true
   }
 
