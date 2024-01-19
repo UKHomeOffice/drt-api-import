@@ -1,6 +1,6 @@
 package advancepassengerinfo.importer.provider
 
-import advancepassengerinfo.health.HealthCheckedState
+import advancepassengerinfo.health.LastCheckedState
 import advancepassengerinfo.importer.processor.DqFileProcessor
 import advancepassengerinfo.importer.{DqApiFeedImpl, InMemoryDatabase}
 import advancepassengerinfo.importer.slickdb.VoyageManifestPassengerInfoTable
@@ -59,7 +59,7 @@ class DqApiFeedImplSpec extends TestKit(ActorSystem("MySpec"))
       val batchedFileNames = List(List("a", "b"), List("c", "d"), List("e", "f"))
       val mockFileNames = MockFileNames(batchedFileNames)
       val mockProcessor = MockDqFileProcessor(filesProbe.ref)
-      val importer = DqApiFeedImpl(mockFileNames, mockProcessor, 100.millis, MockStatsDCollector, HealthCheckedState())
+      val importer = DqApiFeedImpl(mockFileNames, mockProcessor, 100.millis, MockStatsDCollector, LastCheckedState())
 
       val killSwitch: UniqueKillSwitch = importer.processFilesAfter("").viaMat(KillSwitches.single)(Keep.right).toMat(Sink.ignore)(Keep.left).run()
 

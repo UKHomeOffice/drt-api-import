@@ -3,7 +3,7 @@ package advancepassengerinfo.health
 import java.time.{Duration, Instant}
 import scala.concurrent.duration.FiniteDuration
 
-case class HealthCheckedState() {
+case class LastCheckedState() {
   var lastCheckedAt: Instant = Instant.now()
 
   def hasCheckedSince(durationInMin: FiniteDuration): Boolean = {

@@ -8,17 +8,17 @@ import scala.concurrent.duration.DurationInt
 
 object HealthRoute {
 
-  def checkHealth(healthCheckedState: HealthCheckedState): Route =
+  def checkHealth(lastCheckedState: LastCheckedState): Route =
     get {
-      if (healthCheckedState.hasCheckedSince(5.minutes))
+      if (lastCheckedState.hasCheckedSince(5.minutes))
         complete(StatusCodes.OK)
       else
         complete(StatusCodes.InternalServerError, "KO")
     }
 
-  def apply(healthCheckedState: HealthCheckedState): Route =
+  def apply(lastCheckedState: LastCheckedState): Route =
     pathPrefix("health-check") {
-      checkHealth(healthCheckedState)
+      checkHealth(lastCheckedState)
     }
 }
 

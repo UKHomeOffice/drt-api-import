@@ -12,7 +12,7 @@ class HealthRouteTest extends AnyFlatSpec with Matchers with ScalatestRouteTest 
 
   "HealthRoute" should "return OK status if last checked is within 5 minutes" in {
 
-    val route = HealthRoute(HealthCheckedState())
+    val route = HealthRoute(LastCheckedState())
 
     Get("/health-check") ~> route ~> check {
       status shouldBe StatusCodes.OK
@@ -21,11 +21,11 @@ class HealthRouteTest extends AnyFlatSpec with Matchers with ScalatestRouteTest 
 
   it should "return InternalServerError status if last checked is not with 5 minutes" in {
 
-    val healthCheckedState = HealthCheckedState()
+    val lastCheckedState = LastCheckedState()
 
-    healthCheckedState.setLastCheckedAt(Instant.now().minusSeconds(300))
+    lastCheckedState.setLastCheckedAt(Instant.now().minusSeconds(300))
 
-    val route = HealthRoute(healthCheckedState)
+    val route = HealthRoute(lastCheckedState)
 
     Get("/health-check") ~> route ~> check {
       status shouldBe StatusCodes.InternalServerError
