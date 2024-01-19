@@ -17,7 +17,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success, Try}
-import advancepassengerinfo.health.ProcessState
+import advancepassengerinfo.health.HealthCheckedState
 
 
 case class MockManifests(manifestTries: List[List[Try[Seq[(String, Try[VoyageManifest])]]]]) extends Manifests {
@@ -200,7 +200,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
         processor,
         100.millis,
         MockStatsDCollector,
-        ProcessState()
+        HealthCheckedState()
       )
 
       dqApiFeed.processFilesAfter("_").runWith(Sink.seq)

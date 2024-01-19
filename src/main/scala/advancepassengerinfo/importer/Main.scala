@@ -1,6 +1,6 @@
 package advancepassengerinfo.importer
 
-import advancepassengerinfo.health.{HealthRoute, ProcessState}
+import advancepassengerinfo.health.{HealthRoute, HealthCheckedState}
 import advancepassengerinfo.importer.PostgresTables.profile
 import advancepassengerinfo.importer.persistence.DbPersistenceImpl
 import advancepassengerinfo.importer.processor.DqFileProcessorImpl
@@ -43,7 +43,7 @@ object Main extends App {
 
   private val bucketName = config.getString("s3.api-data.bucket-name")
 
-  val processState = ProcessState()
+  val healthCheckedState = HealthCheckedState()
 
   private def s3Client: S3AsyncClient = {
     val accessKey = config.getString("s3.api-data.credentials.access_key_id")
@@ -61,9 +61,9 @@ object Main extends App {
   val manifestsProvider = ZippedManifests(s3FileAsStream)
   val persistence = DbPersistenceImpl(PostgresDb)
   val zipProcessor = DqFileProcessorImpl(manifestsProvider, persistence)
-  val feed = DqApiFeedImpl(s3FileNamesProvider, zipProcessor, 1.minute, StatsDMetrics, processState)
+  val feed = DqApiFeedImpl(s3FileNamesProvider, zipProcessor, 1.minute, StatsDMetrics, healthCheckedState)
 
-  Http().newServerAt(config.getString("server.host"), config.getInt("server.port")).bind(HealthRoute(processState))
+  Http().newServerAt(config.getString("server.host"), config.getInt("server.port")).bind(HealthRoute(healthCheckedState))
 
   val eventual = Source
     .future(persistence.lastPersistedFileName)
