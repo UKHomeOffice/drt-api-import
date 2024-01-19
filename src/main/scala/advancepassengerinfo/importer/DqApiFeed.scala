@@ -1,5 +1,6 @@
 package advancepassengerinfo.importer
 
+import advancepassengerinfo.health.LastCheckedState
 import advancepassengerinfo.importer.processor.DqFileProcessor
 import advancepassengerinfo.importer.provider.FileNames
 import akka.NotUsed
@@ -7,6 +8,7 @@ import akka.stream.scaladsl.Source
 import com.typesafe.scalalogging.Logger
 import metrics.MetricsCollectorLike
 
+import java.time.Instant
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -17,7 +19,8 @@ trait DqApiFeed {
 case class DqApiFeedImpl(fileNamesProvider: FileNames,
                          fileProcessor: DqFileProcessor,
                          throttle: FiniteDuration,
-                         metricsCollector: MetricsCollectorLike)
+                         metricsCollector: MetricsCollectorLike,
+                         lastCheckedState: LastCheckedState)
                         (implicit ec: ExecutionContext) extends DqApiFeed {
   private val log = Logger(getClass)
 
@@ -25,7 +28,9 @@ case class DqApiFeedImpl(fileNamesProvider: FileNames,
     Source
       .unfoldAsync((lastFileName, List[String]())) { case (lastFileName, lastFiles) =>
         markerAndNextFileNames(lastFileName).map {
-          case (nextFetch, newFiles) => Option((nextFetch, newFiles), (lastFileName, lastFiles))
+          case (nextFetch, newFiles) =>
+            lastCheckedState.setLastCheckedAt(Instant.now())
+            Option((nextFetch, newFiles), (lastFileName, lastFiles))
         }
       }
       .throttle(1, throttle)
