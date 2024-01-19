@@ -16,8 +16,8 @@ class LastCheckedStateTest extends AnyFlatSpec with Matchers {
 
   it should "return true for hasCheckedSince, if the lastCheckedAt is within 5 minutes ago" in {
     val lastCheckedState = LastCheckedState()
-    val fiveMinutesAgo = Instant.now().minus(4, ChronoUnit.MINUTES)
-    lastCheckedState.setLastCheckedAt(fiveMinutesAgo)
+    val fourMinutesAgo = Instant.now().minus(4, ChronoUnit.MINUTES)
+    lastCheckedState.setLastCheckedAt(fourMinutesAgo)
     lastCheckedState.hasCheckedSince(5.minutes) shouldBe true
   }
 
