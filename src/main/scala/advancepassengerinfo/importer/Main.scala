@@ -10,6 +10,7 @@ import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.Logger
 import drtlib.SDate
+import drtlib.SDate.yyyyMMdd
 import metrics.StatsDMetrics
 import slick.jdbc.PostgresProfile
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
@@ -68,9 +69,10 @@ object Main extends App {
         feed.processFilesAfter(lastFileName)
       case None =>
         val date = SDate.now().addDays(-2)
-        val yymmdd = f"${date.getFullYear() - 2000}${date.getMonth()}%02d${date.getDate()}%02d"
+        val yymmdd: String = yyyyMMdd(date)
+        val lastFilename = "drt_dq_" + yymmdd + "_000000_0000.zip"
         log.info(s"No last processed file. Starting from 2 days ago ($yymmdd)")
-        feed.processFilesAfter("drt_dq_" + yymmdd + "_000000_0000.zip")
+        feed.processFilesAfter(lastFilename)
     }.runWith(Sink.ignore)
 
   Await.ready(eventual, Duration.Inf)

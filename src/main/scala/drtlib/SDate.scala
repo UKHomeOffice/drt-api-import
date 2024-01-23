@@ -33,6 +33,8 @@ object SDate {
 
   }
 
+  val yyyyMMdd : SDate => String = date => f"${date.getFullYear() - 2000}${date.getMonth()}%02d${date.getDate()}%02d"
+
   def jodaSDateToIsoString(dateTime: SDate): String = {
     val fmt = ISODateTimeFormat.dateTimeNoMillis()
     val dt = dateTime.dateTime

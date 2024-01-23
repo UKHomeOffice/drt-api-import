@@ -10,10 +10,11 @@ import akka.NotUsed
 import akka.actor.{ActorRef, ActorSystem}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.{TestKit, TestProbe}
+import drtlib.SDate
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-
+import drtlib.SDate.yyyyMMdd
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success, Try}
@@ -213,21 +214,30 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
 
     }
 
-    "handle exceptions while getting nextFiles" in {
+    "handle exceptions while getting nextFiles and start from fallbackFile" in {
+      val fallbackFileName = "drt_dq_" + yyyyMMdd(SDate.now().addDays(-1)) + "_000000_0000.zip"
       val mockFileNamesProvider = new FileNames {
-        override val nextFiles: String => Future[List[String]] = (previous: String) => Future.sequence(List(
+        val fallBackListFiles: String => Future[List[String]] = fallbackFileName => Future.sequence(List(
+          Future.successful(List(fallbackFileName, "3.zip")),
+        )).map(_.flatten)
+
+        val s3Files: String => Future[List[String]] = previous => Future.sequence(List(
           Future.successful(List("1.zip", "2.zip")),
           Future.failed(new Exception("next file exception")),
-          Future.successful(List("3.zip", "4.zip")),
         )).map(_.flatten)
-      }
 
+        override val nextFiles: (String, String) => Future[List[String]] = (lastFile: String, fallbackFileName) => s3Files(lastFile)
+          .recoverWith {
+            case _ =>
+              fallBackListFiles(fallbackFileName)
+          }.map(_.filterNot(_ == lastFile))
+      }
       val probe = TestProbe("probe")
       val mockPersistence = MockPersistence(probe.ref)
 
       val manifests = Seq(
-        ("1.json", Success(manifest)),
-        ("2.json", Success(manifest)),
+        (s"manifest1.json", Success(manifest)),
+        (s"manifest2.json", Success(manifest)),
       )
       val processor = DqFileProcessorImpl(singleZipMockProvider(manifests), mockPersistence)
       val dqApiFeed: DqApiFeedImpl = DqApiFeedImpl(
@@ -237,9 +247,13 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
         MockStatsDCollector
       )
 
-      val result = Await.result(dqApiFeed.processFilesAfter("_").runWith(Sink.seq),1.second)
+      dqApiFeed.processFilesAfter("1.zip").runWith(Sink.seq)
+      probe.expectMsg(ManifestCall("manifest1.json", manifest))
+      probe.expectMsg(JsonFileCall(fallbackFileName, s"manifest1.json", successful = true, dateIsSuspicious = false))
+      probe.expectMsg(ManifestCall("manifest2.json", manifest))
+      probe.expectMsg(JsonFileCall(fallbackFileName, "manifest2.json", successful = true, dateIsSuspicious = false))
+      probe.expectMsg(ZipFileCall(fallbackFileName, successful = true))
 
-      result should ===(Vector.empty)
     }
 
     "handle exception while persisting" in {
@@ -269,7 +283,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
         MockStatsDCollector
       )
 
-      val result = Await.result(dqApiFeed.processFilesAfter("_").runWith(Sink.seq),1.second)
+      val result = Await.result(dqApiFeed.processFilesAfter("_").runWith(Sink.seq), 1.second)
 
       result should ===(Vector.empty)
     }

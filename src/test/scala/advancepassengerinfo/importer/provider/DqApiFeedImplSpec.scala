@@ -25,7 +25,8 @@ case class MockDqFileProcessor(probe: ActorRef) extends DqFileProcessor {
 
 case class MockFileNames(files: List[List[String]]) extends FileNames {
   private var filesQueue = files
-  override val nextFiles: String => Future[List[String]] = (previous: String) => filesQueue match {
+  override val nextFiles: (String, String) => Future[List[String]] = (previous: String, fallbackFilename: String) => s3Files(previous)
+  override val s3Files: String => Future[List[String]] = previous => filesQueue match {
     case Nil => Future.successful(List(previous))
     case head :: tail =>
       filesQueue = tail
