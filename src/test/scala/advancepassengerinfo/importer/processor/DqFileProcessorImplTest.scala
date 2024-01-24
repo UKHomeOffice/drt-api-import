@@ -18,6 +18,7 @@ import drtlib.SDate.yyyyMMdd
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success, Try}
+import advancepassengerinfo.health.LastCheckedState
 import java.util.concurrent.atomic.AtomicInteger
 
 
@@ -202,7 +203,8 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
         MockFileNames(List(List("a", "b"), List("c"))),
         processor,
         100.millis,
-        MockStatsDCollector
+        MockStatsDCollector,
+        LastCheckedState()
       )
 
       dqApiFeed.processFilesAfter("_").runWith(Sink.seq)
@@ -239,7 +241,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
       val mockPersistence = MockPersistence(probe.ref)
       val manifests = createManifests(manifest)
       val processor = DqFileProcessorImpl(singleZipMockProvider(manifests), mockPersistence)
-      val dqApiFeed: DqApiFeedImpl = DqApiFeedImpl(mockFileNamesProvider, processor, 100.millis, MockStatsDCollector)
+      val dqApiFeed: DqApiFeedImpl = DqApiFeedImpl(mockFileNamesProvider, processor, 100.millis, MockStatsDCollector, LastCheckedState())
 
       dqApiFeed.processFilesAfter("1.zip").runWith(Sink.seq)
       probe.expectMsg(ManifestCall("manifest1.json", manifest))
@@ -273,7 +275,8 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
         MockFileNames(List(List("1.zip", "2.zip"), List("3.zip", "4.zip"))),
         processor,
         100.millis,
-        MockStatsDCollector
+        MockStatsDCollector,
+        LastCheckedState()
       )
 
       val result = Await.result(dqApiFeed.processFilesAfter("_").runWith(Sink.seq), 1.second)

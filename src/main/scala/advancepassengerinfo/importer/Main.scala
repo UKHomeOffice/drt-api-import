@@ -1,11 +1,13 @@
 package advancepassengerinfo.importer
 
+import advancepassengerinfo.health.{HealthRoute, LastCheckedState}
 import advancepassengerinfo.importer.PostgresTables.profile
 import advancepassengerinfo.importer.persistence.DbPersistenceImpl
 import advancepassengerinfo.importer.processor.DqFileProcessorImpl
 import advancepassengerinfo.importer.provider._
 import advancepassengerinfo.importer.slickdb.Tables
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
 import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.Logger
@@ -42,6 +44,8 @@ object Main extends App {
 
   private val bucketName = config.getString("s3.api-data.bucket-name")
 
+  val lastCheckedState = LastCheckedState()
+
   private def s3Client: S3AsyncClient = {
     val accessKey = config.getString("s3.api-data.credentials.access_key_id")
     val secretKey = config.getString("s3.api-data.credentials.secret_key")
@@ -58,7 +62,9 @@ object Main extends App {
   val manifestsProvider = ZippedManifests(s3FileAsStream)
   val persistence = DbPersistenceImpl(PostgresDb)
   val zipProcessor = DqFileProcessorImpl(manifestsProvider, persistence)
-  val feed = DqApiFeedImpl(s3FileNamesProvider, zipProcessor, 1.minute, StatsDMetrics)
+  val feed = DqApiFeedImpl(s3FileNamesProvider, zipProcessor, 1.minute, StatsDMetrics, lastCheckedState)
+
+  Http().newServerAt(config.getString("server.host"), config.getInt("server.port")).bind(HealthRoute(lastCheckedState))
 
   val eventual = Source
     .future(persistence.lastPersistedFileName)

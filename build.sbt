@@ -13,8 +13,9 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Def.setting(Seq(
       "org.scalatest" %% "scalatest" % scalatestVersion % Test,
       "com.h2database" % "h2" % h2DatabaseVersion % Test,
+      "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % Test,
       "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion % Test,
-
+      "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
       "ch.qos.logback.contrib" % "logback-json-classic" % logbackVersion,
       "ch.qos.logback.contrib" % "logback-jackson" % logbackVersion,
       "com.fasterxml.jackson.core" % "jackson-databind" % jacksonDatabindVersion,

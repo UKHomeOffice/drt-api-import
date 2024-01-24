@@ -1,14 +1,14 @@
 package advancepassengerinfo.importer
 
+import advancepassengerinfo.health.LastCheckedState
 import advancepassengerinfo.importer.processor.DqFileProcessor
 import advancepassengerinfo.importer.provider.FileNames
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.typesafe.scalalogging.Logger
-import drtlib.SDate
-import drtlib.SDate.yyyyMMdd
 import metrics.MetricsCollectorLike
 
+import java.time.Instant
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -19,7 +19,8 @@ trait DqApiFeed {
 case class DqApiFeedImpl(fileNamesProvider: FileNames,
                          fileProcessor: DqFileProcessor,
                          throttle: FiniteDuration,
-                         metricsCollector: MetricsCollectorLike)
+                         metricsCollector: MetricsCollectorLike,
+                         lastCheckedState: LastCheckedState)
                         (implicit ec: ExecutionContext) extends DqApiFeed {
   private val log = Logger(getClass)
 
@@ -28,13 +29,15 @@ case class DqApiFeedImpl(fileNamesProvider: FileNames,
       .unfoldAsync((lastFileName, List[String]())) { case (lastFileName, lastFiles) =>
         markerAndNextFileNames(lastFileName).map {
           case (nextFetch, newFiles) =>
+            lastCheckedState.setLastCheckedAt(Instant.now())
             Option((nextFetch, newFiles), (lastFileName, lastFiles))
         }.recover {
           case t =>
             log.error(s"Failed to get next files after $lastFileName : ${t.getMessage}")
             Option((lastFileName, lastFiles), (lastFileName, lastFiles))
         }
-      }.throttle(1, throttle)
+      }
+      .throttle(1, throttle)
       .map(_._2)
       .mapConcat(identity)
       .flatMapConcat { zipFileName =>
