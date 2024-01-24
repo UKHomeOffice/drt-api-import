@@ -18,10 +18,12 @@ import drtlib.SDate.yyyyMMdd
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success, Try}
+import java.util.concurrent.atomic.AtomicInteger
 
 
 case class MockManifests(manifestTries: List[List[Try[Seq[(String, Try[VoyageManifest])]]]]) extends Manifests {
   var zipManifestTries: List[List[Try[Seq[(String, Try[VoyageManifest])]]]] = manifestTries
+
   override def tryManifests(fileName: String): Source[Try[Seq[(String, Try[VoyageManifest])]], NotUsed] = zipManifestTries match {
     case Nil => Source.empty
     case head :: tail =>
@@ -215,44 +217,36 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
     }
 
     "handle exceptions while getting nextFiles and start again" in {
-      val mockFileNamesProvider = new FileNames {
-        val fallBackListFiles: String => Future[List[String]] = previous => Future.sequence(List(
-          Future.successful(List(previous, "3.zip")),
-        )).map(_.flatten)
+      def createManifests(manifest: VoyageManifest): Seq[(String, Try[VoyageManifest])] = Seq(
+        ("manifest1.json", Success(manifest)),
+        ("manifest2.json", Success(manifest)),
+      )
 
-        val s3Files: String => Future[List[String]] = previous => Future.sequence(List(
+      def createMockFileNamesProvider(count: AtomicInteger): FileNames = new FileNames {
+        private val s3Files: String => Future[List[String]] = previous => Future.sequence(List(
           Future.successful(List("1.zip", "2.zip")),
-          Future.failed(new Exception("next file exception")),
+          if (count.get() == 0) {
+            count.incrementAndGet()
+            Future.failed(new Exception("next file exception"))
+          } else Future.successful(List("3.zip")),
         )).map(_.flatten)
 
         override val nextFiles: (String) => Future[List[String]] = (lastFile: String) => s3Files(lastFile)
-          .recoverWith {
-            case _ =>
-              fallBackListFiles(lastFile)
-          }.map(_.filterNot(_ == lastFile))
       }
+
+      val mockFileNamesProvider = createMockFileNamesProvider(new AtomicInteger(0))
       val probe = TestProbe("probe")
       val mockPersistence = MockPersistence(probe.ref)
-
-      val manifests = Seq(
-        (s"manifest1.json", Success(manifest)),
-        (s"manifest2.json", Success(manifest)),
-      )
+      val manifests = createManifests(manifest)
       val processor = DqFileProcessorImpl(singleZipMockProvider(manifests), mockPersistence)
-      val dqApiFeed: DqApiFeedImpl = DqApiFeedImpl(
-        mockFileNamesProvider,
-        processor,
-        100.millis,
-        MockStatsDCollector
-      )
+      val dqApiFeed: DqApiFeedImpl = DqApiFeedImpl(mockFileNamesProvider, processor, 100.millis, MockStatsDCollector)
 
       dqApiFeed.processFilesAfter("1.zip").runWith(Sink.seq)
       probe.expectMsg(ManifestCall("manifest1.json", manifest))
-      probe.expectMsg(JsonFileCall("3.zip", s"manifest1.json", successful = true, dateIsSuspicious = false))
+      probe.expectMsg(JsonFileCall("2.zip", "manifest1.json", successful = true, dateIsSuspicious = false))
       probe.expectMsg(ManifestCall("manifest2.json", manifest))
-      probe.expectMsg(JsonFileCall("3.zip", "manifest2.json", successful = true, dateIsSuspicious = false))
-      probe.expectMsg(ZipFileCall("3.zip", successful = true))
-
+      probe.expectMsg(JsonFileCall("2.zip", "manifest2.json", successful = true, dateIsSuspicious = false))
+      probe.expectMsg(ZipFileCall("2.zip", successful = true))
     }
 
     "handle exception while persisting" in {
