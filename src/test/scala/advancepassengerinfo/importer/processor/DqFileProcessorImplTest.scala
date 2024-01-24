@@ -214,11 +214,10 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
 
     }
 
-    "handle exceptions while getting nextFiles and start from fallbackFile" in {
-      val fallbackFileName = "drt_dq_" + yyyyMMdd(SDate.now().addDays(-1)) + "_000000_0000.zip"
+    "handle exceptions while getting nextFiles and start again" in {
       val mockFileNamesProvider = new FileNames {
-        val fallBackListFiles: String => Future[List[String]] = fallbackFileName => Future.sequence(List(
-          Future.successful(List(fallbackFileName, "3.zip")),
+        val fallBackListFiles: String => Future[List[String]] = previous => Future.sequence(List(
+          Future.successful(List(previous, "3.zip")),
         )).map(_.flatten)
 
         val s3Files: String => Future[List[String]] = previous => Future.sequence(List(
@@ -226,10 +225,10 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
           Future.failed(new Exception("next file exception")),
         )).map(_.flatten)
 
-        override val nextFiles: (String, String) => Future[List[String]] = (lastFile: String, fallbackFileName) => s3Files(lastFile)
+        override val nextFiles: (String) => Future[List[String]] = (lastFile: String) => s3Files(lastFile)
           .recoverWith {
             case _ =>
-              fallBackListFiles(fallbackFileName)
+              fallBackListFiles(lastFile)
           }.map(_.filterNot(_ == lastFile))
       }
       val probe = TestProbe("probe")
@@ -249,10 +248,10 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
 
       dqApiFeed.processFilesAfter("1.zip").runWith(Sink.seq)
       probe.expectMsg(ManifestCall("manifest1.json", manifest))
-      probe.expectMsg(JsonFileCall(fallbackFileName, s"manifest1.json", successful = true, dateIsSuspicious = false))
+      probe.expectMsg(JsonFileCall("3.zip", s"manifest1.json", successful = true, dateIsSuspicious = false))
       probe.expectMsg(ManifestCall("manifest2.json", manifest))
-      probe.expectMsg(JsonFileCall(fallbackFileName, "manifest2.json", successful = true, dateIsSuspicious = false))
-      probe.expectMsg(ZipFileCall(fallbackFileName, successful = true))
+      probe.expectMsg(JsonFileCall("3.zip", "manifest2.json", successful = true, dateIsSuspicious = false))
+      probe.expectMsg(ZipFileCall("3.zip", successful = true))
 
     }
 

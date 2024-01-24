@@ -26,8 +26,7 @@ case class DqApiFeedImpl(fileNamesProvider: FileNames,
   override def processFilesAfter(lastFileName: String): Source[String, NotUsed] =
     Source
       .unfoldAsync((lastFileName, List[String]())) { case (lastFileName, lastFiles) =>
-        val fallbackFileName = "drt_dq_" + yyyyMMdd(SDate.now().addDays(-1)) + "_000000_0000.zip"
-        markerAndNextFileNames(lastFileName, fallbackFileName).map {
+        markerAndNextFileNames(lastFileName).map {
           case (nextFetch, newFiles) =>
             Option((nextFetch, newFiles), (lastFileName, lastFiles))
         }.recover {
@@ -60,8 +59,8 @@ case class DqApiFeedImpl(fileNamesProvider: FileNames,
     )
 
 
-  private def markerAndNextFileNames(lastFile: String, fallbackFileName: String): Future[(String, List[String])] =
-    fileNamesProvider.nextFiles(lastFile, fallbackFileName)
+  private def markerAndNextFileNames(lastFile: String): Future[(String, List[String])] =
+    fileNamesProvider.nextFiles(lastFile)
       .map { fileNames =>
         val files = if (lastFile.nonEmpty) fileNames.filterNot(_.contains(lastFile)) else fileNames
         val nextFetch = files.sorted.reverse.headOption.getOrElse(lastFile)
