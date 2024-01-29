@@ -49,12 +49,10 @@ case class DqApiFeedImpl(fileNamesProvider: FileNames,
             case None =>
               log.info(s"$zipFileName could not be processed")
               metricsCollector.counter("api-dq-zip-failure", 1)
-          }
-          .map(_ => zipFileName)
-      }.recoverWithRetries(3, { case t =>
-      log.error(s"Failed to process files after $lastFileName: ${t.getMessage}")
-      Source.empty
-    }).wireTap(s =>
+          }.recover {
+          case t => log.error(s"Failed to process files after $lastFileName: ${t.getMessage}")
+        }.map(_ => zipFileName)
+      }.wireTap(s =>
       if (s.nonEmpty)
         metricsCollector.counter("api-dq-zip-processed", 1)
       else

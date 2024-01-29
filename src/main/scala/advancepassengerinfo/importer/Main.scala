@@ -68,6 +68,11 @@ object Main extends App {
 
   val eventual = Source
     .future(persistence.lastPersistedFileName)
+    .recover {
+      case t =>
+        log.error(s"Failed to get last persisted file name: ${t.getMessage}")
+        None
+    }
     .log("manifests")
     .flatMapConcat {
       case Some(lastFileName) =>
