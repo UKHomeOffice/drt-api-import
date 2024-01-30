@@ -31,11 +31,12 @@ case class DqFileProcessorImpl(manifestsProvider: Manifests, persistence: Persis
             persistence
               .persistZipFile(zipFileName, successful > 0)
               .map(_ => Option((total, successful)))
-          }.recover {
-          case t =>
-            log.error(s"Failed to persist zip file $zipFileName: ${t.getMessage}")
-            None
-        }
+          }
+          .recover {
+            case t =>
+              log.error(s"Failed to persist zip file $zipFileName: ${t.getMessage}")
+              None
+          }
 
       case Failure(throwable) =>
         log.error(s"Failed to process zip file $zipFileName: ${throwable.getMessage}")
@@ -46,11 +47,12 @@ case class DqFileProcessorImpl(manifestsProvider: Manifests, persistence: Persis
             log.error(s"Failed to persist zip file $zipFileName: ${t.getMessage}")
             None
         }
-    }.recover {
-      case t =>
-        log.error(s"Failed to process files after $zipFileName: ${t.getMessage}")
-        None
     }
+      .recover {
+        case t =>
+          log.error(s"Failed to process files after $zipFileName: ${t.getMessage}")
+          None
+      }
   }
 
   private def persistManifests(zipFileName: String, manifestTries: Seq[(String, Try[VoyageManifest])]): Source[(Int, Int), NotUsed] =
@@ -74,26 +76,38 @@ case class DqFileProcessorImpl(manifestsProvider: Manifests, persistence: Persis
                       persistSuccessfulJson(zipFileName, jsonFileName, manifest).map(_ => (total + 1, success + 1))
                     case None =>
                       persistFailedJson(zipFileName, jsonFileName).map(_ => (total + 1, success))
-                  }.recover {
-                  case t =>
-                    log.error(s"Failed to persist manifest from $jsonFileName in $zipFileName: ${t.getMessage}")
-                    (total + 1, success)
-                }
+                  }
+                  .recover {
+                    case t =>
+                      log.error(s"Failed to persist manifest from $jsonFileName in $zipFileName: ${t.getMessage}")
+                      (total + 1, success)
+                  }
             }
-          }.recover {
-            case t =>
-              log.error(s"Failed to persist manifest from $jsonFileName in $zipFileName: ${t.getMessage}")
-              (total + 1, success)
           }
+            .recover {
+              case t =>
+                log.error(s"Failed to persist manifest from $jsonFileName in $zipFileName: ${t.getMessage}")
+                (total + 1, success)
+            }
       }
 
   private def persistSuccessfulJson(zipFileName: String, jsonFileName: String, manifest: VoyageManifest): Future[Int] = {
     val isSuspicious = scheduledIsSuspicious(zipFileName, manifest)
     persistence.persistJsonFile(zipFileName, jsonFileName, successful = true, dateIsSuspicious = isSuspicious)
+      .recover {
+        case t =>
+          log.error(s"Failed to persist successful json file $jsonFileName in $zipFileName: ${t.getMessage}")
+          0
+      }
   }
 
   private def persistFailedJson(zipFileName: String, jsonFileName: String): Future[Int] =
     persistence.persistJsonFile(zipFileName, jsonFileName, successful = false, dateIsSuspicious = false)
+      .recover {
+        case t =>
+          log.error(s"Failed to persist failed json file $jsonFileName in $zipFileName: ${t.getMessage}")
+          0
+      }
 
   private def scheduledIsSuspicious(zf: String, vm: VoyageManifest): Boolean = {
     val maybeSuspiciousDate: Option[Boolean] = for {
