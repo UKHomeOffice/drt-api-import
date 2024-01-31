@@ -12,6 +12,7 @@ import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.Logger
 import drtlib.SDate
+import drtlib.SDate.yyyyMMdd
 import metrics.StatsDMetrics
 import slick.jdbc.PostgresProfile
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
@@ -67,16 +68,23 @@ object Main extends App {
 
   val eventual = Source
     .future(persistence.lastPersistedFileName)
+    .recover {
+      case t =>
+        log.error(s"Failed to get last persisted file name: ${t.getMessage}")
+        None
+    }
     .log("manifests")
     .flatMapConcat {
       case Some(lastFileName) =>
         log.info(s"Last processed file: $lastFileName")
         feed.processFilesAfter(lastFileName)
       case None =>
-        val date = SDate.now().addDays(-2)
-        val yymmdd = f"${date.getFullYear() - 2000}${date.getMonth()}%02d${date.getDate()}%02d"
-        log.info(s"No last processed file. Starting from 2 days ago ($yymmdd)")
-        feed.processFilesAfter("drt_dq_" + yymmdd + "_000000_0000.zip")
+        val twoDaysAgo = -2
+        val date = SDate.now().addDays(twoDaysAgo)
+        val yyyymmdd: String = yyyyMMdd(date)
+        val lastFilename = "drt_dq_" + yyyymmdd + "_000000_0000.zip"
+        log.info(s"No last processed file. Starting from 2 days ago ($yyyymmdd)")
+        feed.processFilesAfter(lastFilename)
     }.runWith(Sink.ignore)
 
   Await.ready(eventual, Duration.Inf)

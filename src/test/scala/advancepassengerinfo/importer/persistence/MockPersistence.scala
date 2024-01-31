@@ -8,7 +8,9 @@ import scala.concurrent.Future
 
 object MockPersistence {
   case class ManifestCall(jsonFileName: String, manifest: VoyageManifest)
+
   case class JsonFileCall(zipFileName: String, jsonFileName: String, successful: Boolean, dateIsSuspicious: Boolean)
+
   case class ZipFileCall(zipFileName: String, successful: Boolean)
 }
 

@@ -31,6 +31,10 @@ case class DqApiFeedImpl(fileNamesProvider: FileNames,
           case (nextFetch, newFiles) =>
             lastCheckedState.setLastCheckedAt(Instant.now())
             Option((nextFetch, newFiles), (lastFileName, lastFiles))
+        }.recover {
+          case t =>
+            log.error(s"Failed to get next files after $lastFileName : ${t.getMessage}")
+            Option((lastFileName, lastFiles), (lastFileName, lastFiles))
         }
       }
       .throttle(1, throttle)
@@ -46,9 +50,18 @@ case class DqApiFeedImpl(fileNamesProvider: FileNames,
               log.info(s"$zipFileName could not be processed")
               metricsCollector.counter("api-dq-zip-failure", 1)
           }
+          .recover {
+            case t => log.error(s"Failed to process files after $lastFileName: ${t.getMessage}")
+          }
           .map(_ => zipFileName)
       }
-      .wireTap(_ => metricsCollector.counter("api-dq-zip-processed", 1))
+      .wireTap(s =>
+        if (s.nonEmpty)
+          metricsCollector.counter("api-dq-zip-processed", 1)
+        else
+          metricsCollector.counter("api-dq-zip-processed", 0)
+      )
+
 
   private def markerAndNextFileNames(lastFile: String): Future[(String, List[String])] =
     fileNamesProvider.nextFiles(lastFile)

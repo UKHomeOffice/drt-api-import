@@ -13,7 +13,9 @@ trait FileNames {
 
 case class S3FileNames(s3Client: S3AsyncClient, bucket: String)
                       (implicit ec: ExecutionContext) extends FileNames {
-  override val nextFiles: String => Future[List[String]] = (lastFile: String) => s3Client
+
+  override val nextFiles: String => Future[List[String]] = lastFile => s3Client
     .listObjects(ListObjectsRequest.builder().bucket(bucket).marker(lastFile).build()).asScala
     .map(_.contents().asScala.map(_.key()).toList)
+
 }
