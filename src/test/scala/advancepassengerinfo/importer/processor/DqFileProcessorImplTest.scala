@@ -317,7 +317,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
       val mockPersistence = new MockPersistence(probe.ref) {
         override def jsonHasBeenProcessed(zipFileName: String, jsonFileName: String): Future[Boolean] =
           if (isFirstCall) {
-            isFirstCall = !isFirstCall
+            isFirstCall = false
             Future.failed(new Exception(s"db jsonHasBeenProcessed exception $isFirstCall"))
           } else {
             Future.successful(false)
@@ -336,7 +336,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
       val mockPersistence = new MockPersistence(probe.ref) {
         override def persistManifest(jsonFileName: String, manifest: VoyageManifest): Future[Option[Int]] =
           if (isFirstCall) {
-            isFirstCall = !isFirstCall
+            isFirstCall = false
             Future.failed(new Exception("db persistManifest exception"))
           } else {
             probe ! ManifestCall(jsonFileName, manifest)
@@ -358,7 +358,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
       val mockPersistence = new MockPersistence(probe.ref) {
         override def persistZipFile(zipFileName: String, successful: Boolean): Future[Boolean] =
           if (isFirstCall) {
-            isFirstCall = !isFirstCall
+            isFirstCall = false
             Future.failed(new Exception("db persistZipFile exception"))
           } else {
             probe ! ZipFileCall(zipFileName, successful)
@@ -381,7 +381,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
       val mockPersistence = new MockPersistence(probe.ref) {
         override def persistJsonFile(zipFileName: String, jsonFileName: String, successful: Boolean, dateIsSuspicious: Boolean): Future[Int] =
           if (isFirstCall) {
-            isFirstCall = !isFirstCall
+            isFirstCall = false
             Future.failed(new Exception("db persistJsonFile exception"))
           } else {
             probe ! JsonFileCall(zipFileName, jsonFileName, successful, dateIsSuspicious)
