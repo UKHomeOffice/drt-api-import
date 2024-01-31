@@ -301,7 +301,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
 
     "process and persist zip files successful with manifest json" in {
       val probe: TestProbe = TestProbe("probe")
-      val mockPersistence = new MockPersistence(probe.ref)
+      val mockPersistence =  MockPersistence(probe.ref)
       val dqApiFeed = getDqApiFeedInstance(mockPersistence)
 
       dqApiFeed.processFilesAfter("_").runWith(Sink.seq)
