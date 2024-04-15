@@ -14,7 +14,7 @@ object PostgresDateHelpers {
     val Saturday = 6
   }
 
-  def dayOfTheWeek(date: SDate): Int = date.getDayOfWeek() match {
+  def dayOfTheWeek(date: SDate): Int = date.dayOfWeek match {
     case DateTimeConstants.SUNDAY => DayOfTheWeek.Sunday
     case DateTimeConstants.MONDAY => DayOfTheWeek.Monday
     case DateTimeConstants.TUESDAY => DayOfTheWeek.Tuesday

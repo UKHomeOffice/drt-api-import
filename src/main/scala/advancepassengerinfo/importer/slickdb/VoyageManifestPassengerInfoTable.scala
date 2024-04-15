@@ -11,8 +11,7 @@ case class VoyageManifestPassengerInfoTable(tables: Tables) {
   import tables.profile.api._
   import tables.{VoyageManifestPassengerInfo, VoyageManifestPassengerInfoRow}
 
-  def rowsToInsert(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, jsonFile: String)
-                  (implicit ec: ExecutionContext): (Int, DBIOAction[Unit, NoStream, Effect.Write]) = {
+  def rowsToInsert(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, jsonFile: String): (Int, DBIOAction[Unit, NoStream, Effect.Write]) = {
     val rows = voyageManifestRows(vm, dayOfWeek, weekOfYear, jsonFile)
     (rows.size, DBIO.seq(VoyageManifestPassengerInfo ++= rows))
   }

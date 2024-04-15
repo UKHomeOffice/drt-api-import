@@ -1,7 +1,6 @@
 package drtlib
 
 import drtlib.SDate.implicits
-import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.{DateTime, DateTimeZone}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -9,13 +8,17 @@ case class SDate(dateTime: DateTime) {
 
   import implicits._
 
-  def getDayOfWeek(): Int = dateTime.getDayOfWeek
+  def dayOfWeek: Int = dateTime.getDayOfWeek
 
-  def getFullYear(): Int = dateTime.getYear
+  def fullYear: Int = dateTime.getYear
 
-  def getMonth(): Int = dateTime.getMonthOfYear
+  def month: Int = dateTime.getMonthOfYear
 
-  def getDate(): Int = dateTime.getDayOfMonth
+  def date: Int = dateTime.getDayOfMonth
+
+  def hour: Int = dateTime.getHourOfDay
+
+  def minute: Int = dateTime.getMinuteOfHour
 
   def addDays(daysToAdd: Int): SDate = dateTime.plusDays(daysToAdd)
 
@@ -33,13 +36,7 @@ object SDate {
 
   }
 
-  val yyyyMMdd : SDate => String = date => f"${date.getFullYear() - 2000}${date.getMonth()}%02d${date.getDate()}%02d"
-
-  def jodaSDateToIsoString(dateTime: SDate): String = {
-    val fmt = ISODateTimeFormat.dateTimeNoMillis()
-    val dt = dateTime.dateTime
-    fmt.print(dt)
-  }
+  val yyyyMMdd: SDate => String = date => f"${date.fullYear - 2000}${date.month}%02d${date.date}%02d"
 
   def apply(dateTime: String): SDate = SDate(new DateTime(dateTime, DateTimeZone.UTC))
 

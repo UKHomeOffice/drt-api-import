@@ -50,14 +50,20 @@ case class PersistenceWithProbe(db: Db, probe: ActorRef)(implicit val ec: Execut
     super.persistManifest(jsonFileName, manifest)
   }
 
-  override def persistJsonFile(zipFileName: String, jsonFileName: String, successful: Boolean, dateIsSuspicious: Boolean): Future[Int] = {
+  override def persistJsonFile(zipFileName: String,
+                               jsonFileName: String,
+                               successful: Boolean,
+                               dateIsSuspicious: Boolean,
+                               maybeManifest: Option[VoyageManifest],
+                               processedAt: Long,
+                              ): Future[Int] = {
     probe ! JsonFileCall(zipFileName, jsonFileName, successful, dateIsSuspicious)
-    super.persistJsonFile(zipFileName, jsonFileName, successful, dateIsSuspicious)
+    super.persistJsonFile(zipFileName, jsonFileName, successful, dateIsSuspicious, maybeManifest, processedAt)
   }
 
-  override def persistZipFile(zipFileName: String, successful: Boolean): Future[Boolean] = {
+  override def persistZipFile(zipFileName: String, successful: Boolean, processedAt: Long): Future[Boolean] = {
     probe ! ZipFileCall(zipFileName, successful)
-    super.persistZipFile(zipFileName, successful)
+    super.persistZipFile(zipFileName, successful, 0L)
   }
 }
 
@@ -240,7 +246,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
 
       def createMockFileNamesProvider: FileNames = new FileNames {
         private var isFirstCall: Boolean = true
-        private val s3Files: String => Future[List[String]] = previous => Future.sequence(List(
+        private val s3Files: String => Future[List[String]] = _ => Future.sequence(List(
           Future.successful(List("1.zip", "2.zip")),
           if (isFirstCall) {
             isFirstCall = false
@@ -356,7 +362,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
       val probe: TestProbe = TestProbe("probe")
       var isFirstCall: Boolean = true
       val mockPersistence = new MockPersistence(probe.ref) {
-        override def persistZipFile(zipFileName: String, successful: Boolean): Future[Boolean] =
+        override def persistZipFile(zipFileName: String, successful: Boolean, processedAt: Long): Future[Boolean] =
           if (isFirstCall) {
             isFirstCall = false
             Future.failed(new Exception("db persistZipFile exception"))
@@ -379,7 +385,13 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
       val probe: TestProbe = TestProbe("probe")
       var isFirstCall: Boolean = true
       val mockPersistence = new MockPersistence(probe.ref) {
-        override def persistJsonFile(zipFileName: String, jsonFileName: String, successful: Boolean, dateIsSuspicious: Boolean): Future[Int] =
+        override def persistJsonFile(zipFileName: String,
+                                     jsonFileName: String,
+                                     successful: Boolean,
+                                     dateIsSuspicious: Boolean,
+                                     maybeManifest: Option[VoyageManifest],
+                                     processedAt: Long,
+                                    ): Future[Int] =
           if (isFirstCall) {
             isFirstCall = false
             Future.failed(new Exception("db persistJsonFile exception"))

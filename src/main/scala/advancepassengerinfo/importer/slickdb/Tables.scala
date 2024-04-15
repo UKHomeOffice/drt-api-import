@@ -1,8 +1,43 @@
 package advancepassengerinfo.importer.slickdb
 
-import java.sql.Timestamp
-
+import drtlib.SDate
 import slick.jdbc.PostgresProfile
+import slick.sql.SqlProfile.ColumnOption.SqlType
+
+import java.sql.{Date, Timestamp}
+import scala.util.matching.Regex
+
+
+
+case class ProcessedZipRow(zip_file_name: String, success: Boolean, processed_at: Timestamp, created_on: Option[String])
+
+object ProcessedZipRow {
+  private val dqFileNameDateRegex: Regex = "drt_dq_([0-9]{2})([0-9]{2})([0-9]{2})_[0-9]{6}_[0-9]{4}\\.zip".r
+
+  def extractCreatedOn(fileName: String): Option[Date] = fileName match {
+    case dqFileNameDateRegex(year, month, day) =>
+      println(s"year: $year, month: $month, day: $day")
+      Option(new Date(SDate(s"20$year-$month-$day").millisSinceEpoch))
+    case _ => None
+  }
+}
+
+case class ProcessedJsonRow(zip_file_name: String,
+                            json_file_name: String,
+                            suspicious_date: Boolean,
+                            success: Boolean,
+                            processed_at: Timestamp,
+                            arrival_port_code: Option[String],
+                            departure_port_code: Option[String],
+                            voyage_number: Option[Int],
+                            scheduled: Option[Timestamp],
+                            event_code: Option[String],
+                            non_interactive_total_count: Option[Int],
+                            non_interactive_trans_count: Option[Int],
+                            interactive_total_count: Option[Int],
+                            interactive_trans_count: Option[Int],
+                           )
+
 
 /** Slick data model trait for extension, choice of backend or usage in the cake pattern. (Make sure to initialize this late.) */
 trait Tables {
@@ -10,14 +45,9 @@ trait Tables {
 
   import profile.api._
   // NOTE: GetResult mappers for plain SQL are only generated for tables where Slick knows how to map the types of all columns.
-  import slick.jdbc.{GetResult => GR}
 
   /** DDL for all tables. Call .create to execute. */
   lazy val schema: profile.SchemaDescription = VoyageManifestPassengerInfo.schema ++ ProcessedJson.schema ++ ProcessedZip.schema
-
-  case class ProcessedZipRow(zip_file_name: String, success: Boolean, processed_at: Timestamp)
-
-  case class ProcessedJsonRow(zip_file_name: String, json_file_name: String, suspicious_date: Boolean, success: Boolean, processed_at: Timestamp)
 
   case class VoyageManifestPassengerInfoRow(event_code: String,
                                             arrival_port_code: String,
@@ -38,6 +68,7 @@ trait Tables {
                                             passenger_identifier: String,
                                             in_transit: Boolean,
                                             json_file: String)
+
   private val maybeSchema = profile match {
     case _: PostgresProfile =>
       Some("public")
@@ -46,21 +77,36 @@ trait Tables {
   }
 
   class ProcessedZip(_tableTag: Tag) extends profile.api.Table[ProcessedZipRow](_tableTag, maybeSchema, "processed_zip") {
-    def * = (zip_file_name, success, processed_at) <> (ProcessedZipRow.tupled, ProcessedZipRow.unapply)
-
     val zip_file_name: Rep[String] = column[String]("zip_file_name")
     val success: Rep[Boolean] = column[Boolean]("success")
     val processed_at: Rep[Timestamp] = column[Timestamp]("processed_at")
+    val created_on: Rep[Option[String]] = column[Option[String]]("created_on", SqlType("VARCHAR(10)"))
+
+    def * = {
+      val apply = ProcessedZipRow.apply _
+      (zip_file_name, success, processed_at, created_on) <> (apply.tupled, ProcessedZipRow.unapply)
+    }
   }
 
   class ProcessedJson(_tableTag: Tag) extends profile.api.Table[ProcessedJsonRow](_tableTag, maybeSchema, "processed_json") {
-    def * = (zip_file_name, json_file_name, suspicious_date, success, processed_at) <> (ProcessedJsonRow.tupled, ProcessedJsonRow.unapply)
-
     val zip_file_name: Rep[String] = column[String]("zip_file_name")
     val json_file_name: Rep[String] = column[String]("json_file_name")
     val suspicious_date: Rep[Boolean] = column[Boolean]("suspicious_date")
     val success: Rep[Boolean] = column[Boolean]("success")
     val processed_at: Rep[Timestamp] = column[Timestamp]("processed_at")
+    val arrival_port_code: Rep[Option[String]] = column[String]("arrival_port_code")
+    val departure_port_code: Rep[Option[String]] = column[String]("departure_port_code")
+    val voyage_number: Rep[Option[Int]] = column[Int]("voyage_number")
+    val scheduled: Rep[Option[Timestamp]] = column[Timestamp]("scheduled_date")
+    val event_code: Rep[Option[String]] = column[String]("event_code")
+    val non_interactive_total_count: Rep[Option[Int]] = column[Int]("non_interactive_total_count")
+    val non_interactive_trans_count: Rep[Option[Int]] = column[Int]("non_interactive_trans_count")
+    val interactive_total_count: Rep[Option[Int]] = column[Int]("interactive_total_count")
+    val interactive_trans_count: Rep[Option[Int]] = column[Int]("interactive_trans_count")
+
+    def * = (zip_file_name, json_file_name, suspicious_date, success, processed_at,
+      arrival_port_code, departure_port_code, voyage_number, scheduled,
+      event_code, non_interactive_total_count, interactive_total_count, non_interactive_trans_count, interactive_trans_count) <> (ProcessedJsonRow.tupled, ProcessedJsonRow.unapply)
   }
 
   /** Table description of table arrival. Objects of this class serve as prototypes for rows in queries. */

@@ -1,21 +1,27 @@
 package advancepassengerinfo.importer.persistence
 
 import advancepassengerinfo.importer.Db
-import advancepassengerinfo.importer.slickdb.VoyageManifestPassengerInfoTable
+import advancepassengerinfo.importer.slickdb.{ProcessedJsonRow, ProcessedZipRow, VoyageManifestPassengerInfoTable}
 import advancepassengerinfo.manifests.VoyageManifest
 import com.typesafe.scalalogging.Logger
 import drtlib.SDate
 
-import java.sql.Timestamp
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future}
+import java.sql.{Date, Timestamp}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 trait Persistence {
   def persistManifest(jsonFileName: String, manifest: VoyageManifest): Future[Option[Int]]
 
-  def persistJsonFile(zipFileName: String, jsonFileName: String, successful: Boolean, dateIsSuspicious: Boolean): Future[Int]
+  def persistJsonFile(zipFileName: String,
+                      jsonFileName: String,
+                      successful: Boolean,
+                      dateIsSuspicious: Boolean,
+                      maybeManifest: Option[VoyageManifest],
+                      processedAt: Long,
+                     ): Future[Int]
 
-  def persistZipFile(zipFileName: String, successful: Boolean): Future[Boolean]
+  def persistZipFile(zipFileName: String, successful: Boolean, processedAt: Long): Future[Boolean]
 
   def lastPersistedFileName: Future[Option[String]]
 
@@ -64,15 +70,37 @@ trait DbPersistence extends Persistence {
     }
   }
 
-  override def persistJsonFile(zipFileName: String, jsonFileName: String, successful: Boolean, dateIsSuspicious: Boolean): Future[Int] = {
-    val processedAt = new Timestamp(SDate.now().millisSinceEpoch)
-    val processedJsonFileToInsert = db.tables.ProcessedJson += db.tables.ProcessedJsonRow(zipFileName, jsonFileName, dateIsSuspicious, successful, processedAt)
+  override def persistJsonFile(zipFileName: String,
+                               jsonFileName: String,
+                               successful: Boolean,
+                               dateIsSuspicious: Boolean,
+                               maybeManifest: Option[VoyageManifest],
+                               processedAt: Long,
+                              ): Future[Int] = {
+    val processedAtTs = new Timestamp(processedAt)
+    val processedJsonFileToInsert = db.tables.ProcessedJson += ProcessedJsonRow(
+      zip_file_name = zipFileName,
+      json_file_name = jsonFileName,
+      suspicious_date = dateIsSuspicious,
+      success = successful,
+      processed_at = processedAtTs,
+      arrival_port_code = maybeManifest.map(_.ArrivalPortCode),
+      departure_port_code = maybeManifest.map(_.DeparturePortCode),
+      voyage_number = Try(maybeManifest.map(_.VoyageNumber.toInt)).toOption.flatten,
+      scheduled = maybeManifest.flatMap(m => m.scheduleArrivalDateTime.map(s => new Timestamp(s.millisSinceEpoch))),
+      event_code = maybeManifest.map(_.EventCode),
+      non_interactive_total_count = maybeManifest.map(_.PassengerList.count(!_.PassengerIdentifier.exists(_ != ""))),
+      non_interactive_trans_count = maybeManifest.map(_.PassengerList.count(p => !p.PassengerIdentifier.exists(_ != "") && p.InTransitFlag.contains("Y"))),
+      interactive_total_count = maybeManifest.map(_.PassengerList.count(_.PassengerIdentifier.exists(_ != ""))),
+      interactive_trans_count = maybeManifest.map(_.PassengerList.count(p => p.PassengerIdentifier.exists(_ != "") && p.InTransitFlag.contains("Y"))),
+    )
     con.run(processedJsonFileToInsert)
   }
 
-  override def persistZipFile(zipFileName: String, successful: Boolean): Future[Boolean] = {
-    val processedAt = new Timestamp(SDate.now().millisSinceEpoch)
-    val processedZipFileToInsert = db.tables.ProcessedZip += db.tables.ProcessedZipRow(zipFileName, successful, processedAt)
+  override def persistZipFile(zipFileName: String, successful: Boolean, processedAt: Long): Future[Boolean] = {
+    val processedAtTs = new Timestamp(processedAt)
+    val maybeCreatedOn = ProcessedZipRow.extractCreatedOn(zipFileName)
+    val processedZipFileToInsert = db.tables.ProcessedZip += ProcessedZipRow(zipFileName, successful, processedAtTs, maybeCreatedOn)
     con.run(processedZipFileToInsert).map(_ > 0)
   }
 

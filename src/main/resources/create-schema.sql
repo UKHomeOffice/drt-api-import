@@ -1,3 +1,5 @@
+-- noinspection SqlNoDataSourceInspectionForFile
+
 CREATE TABLE public.voyage_manifest_passenger_info (
     event_code character varying(2),
     arrival_port_code character varying(5),
@@ -33,42 +35,36 @@ CREATE TABLE public.processed_json (
     json_file_name character varying (50),
     suspicious_date boolean,
     success boolean,
-    processed_at timestamp without time zone
+    processed_at timestamp without time zone,
+    arrival_port_code varchar(5),
+    departure_port_code varchar(5),
+    voyage_number integer,
+    scheduled timestamp without time zone,
+    event_code varchar(3),
+    non_interactive_total_count smallint,
+    non_interactive_trans_count smallint,
+    interactive_total_count smallint,
+    interactive_trans_count smallint
 );
 
 CREATE INDEX processed_json_zip_file_name ON public.processed_json (zip_file_name);
 CREATE INDEX processed_json_json_file_name ON public.processed_json (json_file_name);
 CREATE INDEX processed_json_suspicious_date ON public.processed_json (suspicious_date);
 CREATE INDEX processed_json_success ON public.processed_json (success);
-
+CREATE INDEX processed_json_unique_arrival ON public.processed_json (arrival_port_code, departure_port_code, scheduled, voyage_number, event_code);
+CREATE INDEX processed_json_arrival_port_date_event_code ON public.processed_json (arrival_port_code, cast(scheduled as date), event_code);
 
 CREATE TABLE public.processed_zip (
     zip_file_name character varying (50),
     success boolean,
-    processed_at timestamp without time zone
+    processed_at timestamp without time zone,
+    created_on date
 );
 
 CREATE INDEX processed_zip_zip_file_name ON public.processed_zip (zip_file_name);
 CREATE INDEX processed_zip_success ON public.processed_zip (success);
 CREATE INDEX processed_zip_processed_at ON public.processed_zip (processed_at);
+CREATE INDEX processed_zip_created_on ON processed_zip (created_on);
 
-SELECT
-  vm.arrival_port_code, vm.departure_port_code, vm.voyage_number, vm.scheduled_date, pz.processed_at
-FROM processed_zip pz
-INNER JOIN processed_json pj ON pz.zip_file_name=pj.zip_file_name
-INNER JOIN voyage_manifest_passenger_info vm ON vm.json_file = pj.json_file_name
-WHERE pz.processed_at>='2022-03-09T17:00' AND vm.arrival_port_code='LHR'
-GROUP BY vm.arrival_port_code, vm.departure_port_code, vm.carrier_code, vm.voyage_number, vm.scheduled_date, pz.processed_at
-ORDER BY pz.processed_at;
-
-SELECT
-    vm.departure_port_code, vm.voyage_number, vm.scheduled_date, pz.processed_at
-FROM processed_zip pz
-         INNER JOIN processed_json pj ON pz.zip_file_name = pj.zip_file_name
-         INNER JOIN voyage_manifest_passenger_info vm ON vm.json_file = pj.json_file_name
-WHERE
-        pz.processed_at >= '2022-03-09T17:00'
-  AND vm.arrival_port_code = ${destinationPortCode.iata}
-  AND event_code = 'DC'
-GROUP BY vm.departure_port_code, vm.voyage_number, vm.scheduled_date, pz.processed_at
-ORDER BY pz.processed_at
+/*update processed_zip set created_on = concat('20',substring(zip_file_name, 8, 2),'-',substring(zip_file_name, 10, 2),'-',substring(zip_file_name, 12, 2))::date
+   where created_on is null;*/

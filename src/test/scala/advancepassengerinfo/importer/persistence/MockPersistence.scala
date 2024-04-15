@@ -20,12 +20,18 @@ case class MockPersistence(probe: ActorRef) extends Persistence {
     Future.successful(Option(1))
   }
 
-  override def persistJsonFile(zipFileName: String, jsonFileName: String, successful: Boolean, dateIsSuspicious: Boolean): Future[Int] = {
+  override def persistJsonFile(zipFileName: String,
+                               jsonFileName: String,
+                               successful: Boolean,
+                               dateIsSuspicious: Boolean,
+                               maybeManifest: Option[VoyageManifest],
+                               processedAt: Long,
+                              ): Future[Int] = {
     probe ! JsonFileCall(zipFileName, jsonFileName, successful, dateIsSuspicious)
     Future.successful(1)
   }
 
-  override def persistZipFile(zipFileName: String, successful: Boolean): Future[Boolean] = {
+  override def persistZipFile(zipFileName: String, successful: Boolean, processedAt: Long): Future[Boolean] = {
     probe ! ZipFileCall(zipFileName, successful)
     Future.successful(true)
   }
