@@ -5,7 +5,7 @@ object Dependencies {
   val akkaHttpVersion = "10.5.3"
   val awsSdkS3Version = "2.19.33"
   val jodaTimeVersion = "2.12.2"
-  val slickVersion = "3.4.1"
+  val slickVersion = "3.5.1"
   val sprayJsonVersion = "1.3.6"
   val postgresqlVersion = "42.5.3"
   val h2DatabaseVersion = "2.1.214"
