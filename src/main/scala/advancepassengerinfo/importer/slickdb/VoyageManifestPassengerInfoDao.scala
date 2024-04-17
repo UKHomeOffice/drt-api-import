@@ -1,19 +1,20 @@
 package advancepassengerinfo.importer.slickdb
 
 import advancepassengerinfo.manifests.{PassengerInfo, VoyageManifest}
+import DatabaseImpl.profile.api._
+import advancepassengerinfo.importer.slickdb.tables.{VoyageManifestPassengerInfoRow, VoyageManifestPassengerInfoTable}
 
 import java.sql.Timestamp
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 
 
-case class VoyageManifestPassengerInfoTable(tables: Tables) {
-  import tables.profile.api._
-  import tables.{VoyageManifestPassengerInfo, VoyageManifestPassengerInfoRow}
+object VoyageManifestPassengerInfoDao {
+  lazy val voyageManifestPassengerInfo = TableQuery[VoyageManifestPassengerInfoTable]
 
   def rowsToInsert(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, jsonFile: String): (Int, DBIOAction[Unit, NoStream, Effect.Write]) = {
     val rows = voyageManifestRows(vm, dayOfWeek, weekOfYear, jsonFile)
-    (rows.size, DBIO.seq(VoyageManifestPassengerInfo ++= rows))
+    (rows.size, DBIO.seq(voyageManifestPassengerInfo ++= rows))
   }
 
   def voyageManifestRows(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, jsonFile: String): List[VoyageManifestPassengerInfoRow] = {
@@ -22,7 +23,7 @@ case class VoyageManifestPassengerInfoTable(tables: Tables) {
     vm.bestPassengers.map { passenger => passengerRow(vm, dayOfWeek, weekOfYear, schTs, passenger, jsonFile) }
   }
 
-  def passengerRow(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, schTs: Timestamp, p: PassengerInfo, jsonFile: String): tables.VoyageManifestPassengerInfoRow = {
+  def passengerRow(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, schTs: Timestamp, p: PassengerInfo, jsonFile: String): VoyageManifestPassengerInfoRow = {
     VoyageManifestPassengerInfoRow(
       event_code = vm.EventCode,
       arrival_port_code = vm.ArrivalPortCode,

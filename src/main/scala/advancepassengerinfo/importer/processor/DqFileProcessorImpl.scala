@@ -2,7 +2,7 @@ package advancepassengerinfo.importer.processor
 
 import advancepassengerinfo.importer.persistence.Persistence
 import advancepassengerinfo.importer.provider.Manifests
-import advancepassengerinfo.importer.slickdb.ProcessedZipRow
+import advancepassengerinfo.importer.slickdb.tables.ProcessedZipRow
 import advancepassengerinfo.manifests.VoyageManifest
 import akka.NotUsed
 import akka.stream.scaladsl.Source
@@ -12,6 +12,7 @@ import drtlib.SDate
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
+
 
 trait DqFileProcessor {
   def process(zipFileName: String): Source[Option[(Int, Int)], Any]
@@ -117,7 +118,7 @@ case class DqFileProcessorImpl(manifestsProvider: Manifests, persistence: Persis
       zipDate <- ProcessedZipRow.extractCreatedOn(zf)
       scdDate <- vm.scheduleArrivalDateTime
     } yield {
-      scdDate.millisSinceEpoch - zipDate.getTime > 2 * oneDayMillis
+      scdDate.millisSinceEpoch - SDate(zipDate).millisSinceEpoch > 2 * oneDayMillis
     }
 
     maybeSuspiciousDate.getOrElse(false)
@@ -155,7 +156,7 @@ update processed_json pj
   where pj.zip_file_name = pz.zip_file_name and pj.scheduled is null and '2019-04-15' <= pz.created_on and pz.created_on <= '2019-04-15';
 
 
- alter table processed_zip add created_on date;
+ alter table processed_zip add created_on varchar(10);
  create index processed_zip_created_on on processed_zip (created_on);
  update processed_zip set created_on = concat('20',substring(zip_file_name, 8, 2),'-',substring(zip_file_name, 10, 2),'-',substring(zip_file_name, 12, 2))::date
    where created_on is null;

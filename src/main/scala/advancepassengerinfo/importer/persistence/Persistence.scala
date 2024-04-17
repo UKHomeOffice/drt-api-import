@@ -1,12 +1,15 @@
 package advancepassengerinfo.importer.persistence
 
 import advancepassengerinfo.importer.Db
-import advancepassengerinfo.importer.slickdb.{ProcessedJsonRow, ProcessedZipRow, VoyageManifestPassengerInfoTable}
+import advancepassengerinfo.importer.slickdb.DatabaseImpl.profile.api._
+import advancepassengerinfo.importer.slickdb.tables.{ProcessedJsonRow, ProcessedJsonTable, ProcessedZipRow, ProcessedZipTable}
+import advancepassengerinfo.importer.slickdb.{VoyageManifestPassengerInfoDao, tables}
 import advancepassengerinfo.manifests.VoyageManifest
 import com.typesafe.scalalogging.Logger
 import drtlib.SDate
+import slick.lifted.TableQuery
 
-import java.sql.{Date, Timestamp}
+import java.sql.Timestamp
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
@@ -35,11 +38,11 @@ trait DbPersistence extends Persistence {
 
   implicit val ec: ExecutionContext
 
-  val manifestTable: VoyageManifestPassengerInfoTable = VoyageManifestPassengerInfoTable(db.tables)
+  private val manifestTable = VoyageManifestPassengerInfoDao
+  private val processedJsonTable = TableQuery[ProcessedJsonTable]
+  private val processedZipTable = TableQuery[ProcessedZipTable]
 
-  val con: db.tables.profile.backend.DatabaseDef = db.con
-
-  import db.tables.profile.api._
+  val con: db.profile.backend.DatabaseDef = db.con
 
   override def persistManifest(jsonFileName: String, manifest: VoyageManifest): Future[Option[Int]] = {
     manifest.scheduleArrivalDateTime
@@ -78,7 +81,7 @@ trait DbPersistence extends Persistence {
                                processedAt: Long,
                               ): Future[Int] = {
     val processedAtTs = new Timestamp(processedAt)
-    val processedJsonFileToInsert = db.tables.ProcessedJson += ProcessedJsonRow(
+    val processedJsonFileToInsert = processedJsonTable += ProcessedJsonRow(
       zip_file_name = zipFileName,
       json_file_name = jsonFileName,
       suspicious_date = dateIsSuspicious,
@@ -100,21 +103,22 @@ trait DbPersistence extends Persistence {
   override def persistZipFile(zipFileName: String, successful: Boolean, processedAt: Long): Future[Boolean] = {
     val processedAtTs = new Timestamp(processedAt)
     val maybeCreatedOn = ProcessedZipRow.extractCreatedOn(zipFileName)
-    val processedZipFileToInsert = db.tables.ProcessedZip += ProcessedZipRow(zipFileName, successful, processedAtTs, maybeCreatedOn)
+    val processedZipFileToInsert = processedZipTable += tables.ProcessedZipRow(zipFileName, successful, processedAtTs, maybeCreatedOn)
     con.run(processedZipFileToInsert).map(_ > 0)
   }
 
   override def lastPersistedFileName: Future[Option[String]] = {
-    val sourceFileNamesQuery = db.tables.ProcessedJson.map(_.zip_file_name)
+    val sourceFileNamesQuery = processedJsonTable.map(_.zip_file_name)
     con.run(sourceFileNamesQuery.max.result)
   }
 
   override def jsonHasBeenProcessed(zipFileName: String, jsonFileName: String): Future[Boolean] = {
-    val query = db.tables.ProcessedJson.filter(r => r.zip_file_name === zipFileName && r.json_file_name === jsonFileName)
+    val query = processedJsonTable.filter(r => r.zip_file_name === zipFileName && r.json_file_name === jsonFileName)
     con.run(query.exists.result)
   }
 }
 
-case class DbPersistenceImpl(db: Db)(implicit executionContext: ExecutionContext) extends DbPersistence {
+case class DbPersistenceImpl(db: Db)
+                            (implicit executionContext: ExecutionContext) extends DbPersistence {
   override implicit val ec: ExecutionContext = executionContext
 }

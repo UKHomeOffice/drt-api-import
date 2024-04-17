@@ -1,11 +1,10 @@
 package advancepassengerinfo.importer
 
 import advancepassengerinfo.health.{HealthRoute, LastCheckedState}
-import advancepassengerinfo.importer.PostgresTables.profile
 import advancepassengerinfo.importer.persistence.DbPersistenceImpl
 import advancepassengerinfo.importer.processor.DqFileProcessorImpl
 import advancepassengerinfo.importer.provider._
-import advancepassengerinfo.importer.slickdb.Tables
+import advancepassengerinfo.importer.slickdb.DatabaseImpl
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.scaladsl.{Sink, Source}
@@ -26,7 +25,7 @@ import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
 
 object PostgresTables extends {
   val profile = PostgresProfile
-} with Tables
+}
 
 object Main extends App {
   val log = Logger(getClass)
@@ -91,12 +90,12 @@ object Main extends App {
 }
 
 trait Db {
-  val tables: advancepassengerinfo.importer.slickdb.Tables
-  val con: tables.profile.backend.Database
+  val profile: slick.jdbc.JdbcProfile
+  val con: profile.backend.Database
 }
 
 object PostgresDb extends Db {
-  val tables: PostgresTables.type = PostgresTables
-  val con: profile.backend.Database = tables.profile.backend.Database.forConfig("db")
+  override val profile = DatabaseImpl.profile
+  val con: profile.backend.Database = profile.api.Database.forConfig("db")
 }
 

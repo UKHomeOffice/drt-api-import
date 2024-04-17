@@ -14,6 +14,7 @@ import akka.testkit.{TestKit, TestProbe}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success, Try}
@@ -73,7 +74,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
   with BeforeAndAfterAll {
 
   override def beforeAll(): Unit = {
-    InMemoryDatabase.truncateDb()
+    InMemoryDatabase.dropAndCreateTables
   }
 
   override def afterAll(): Unit = {

@@ -14,7 +14,7 @@ import scala.language.postfixOps
 class DbSpec extends AnyWordSpec with Matchers with Builder {
   implicit val ec: ExecutionContextExecutor = ExecutionContext.global
 
-  val vmTable: VoyageManifestPassengerInfoTable = VoyageManifestPassengerInfoTable(InMemoryDatabase.tables)
+  private val vmTable = VoyageManifestPassengerInfoDao
 
   "A request for day of the week" should {
     "give me 6 (for Saturday) when given a date falling on a Saturday" in {

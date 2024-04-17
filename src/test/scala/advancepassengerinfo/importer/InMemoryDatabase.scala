@@ -1,6 +1,6 @@
 package advancepassengerinfo.importer
 
-import advancepassengerinfo.importer.slickdb.Tables
+import advancepassengerinfo.importer.slickdb.tables.{ProcessedJsonTable, ProcessedZipTable, VoyageManifestPassengerInfoTable}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
@@ -9,17 +9,22 @@ object InMemoryDatabase extends Db {
 
   object H2Tables extends {
     val profile = slick.jdbc.H2Profile
-  } with Tables
-
-  val tables: H2Tables.type = H2Tables
-  val con: tables.profile.backend.Database = tables.profile.backend.Database.forConfig("tsql.db")
-
-  def truncateDb(): Unit = {
-    import tables.profile.api._
-    tables.schema.truncateStatements.foreach { statement =>
-      Await.ready(con.run(sqlu"""DELETE FROM processed_json"""), 1.second)
-      Await.ready(con.run(sqlu"""DELETE FROM processed_zip"""), 1.second)
-      Await.ready(con.run(sqlu"""DELETE FROM voyage_manifest_passenger_info"""), 1.second)
-    }
   }
+
+  val profile = H2Tables.profile
+  val con: profile.backend.Database = profile.backend.Database.forConfig("tsql.db")
+
+  import profile.api._
+
+  def dropAndCreateTables = Await.result(
+    con.run(DBIO.seq(
+      TableQuery[ProcessedZipTable].schema.dropIfExists,
+      TableQuery[ProcessedZipTable].schema.create,
+      TableQuery[ProcessedJsonTable].schema.dropIfExists,
+      TableQuery[ProcessedJsonTable].schema.create,
+      TableQuery[VoyageManifestPassengerInfoTable].schema.dropIfExists,
+      TableQuery[VoyageManifestPassengerInfoTable].schema.create,
+    )
+    ), 1.second
+  )
 }

@@ -1,33 +1,39 @@
 package advancepassengerinfo.importer.persistence
 
-import advancepassengerinfo.importer.InMemoryDatabase.H2Tables
-import advancepassengerinfo.importer.slickdb.{Builder, ProcessedJsonRow, ProcessedZipRow, VoyageManifestPassengerInfoTable}
+import advancepassengerinfo.importer.InMemoryDatabase.H2Tables.profile.api._
+import advancepassengerinfo.importer.slickdb.tables._
+import advancepassengerinfo.importer.slickdb.{VoyageManifestPassengerInfoDao, tables}
 import advancepassengerinfo.importer.{InMemoryDatabase, PostgresDateHelpers}
 import advancepassengerinfo.manifests.{PassengerInfo, VoyageManifest}
 import akka.actor.ActorSystem
 import akka.stream.Materializer
-import akka.stream.scaladsl.Source
 import drtlib.SDate
+import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import slick.lifted.TableQuery
 
-import java.sql.{Date, Timestamp}
+import java.sql.Timestamp
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
 import scala.language.postfixOps
-import scala.util.Success
 
 
-class PersistenceSpec extends AnyWordSpec with Matchers with Builder {
+class PersistenceSpec extends AnyWordSpec with Matchers with BeforeAndAfter {
   implicit val actorSystem: ActorSystem = ActorSystem("api-data-import")
   implicit val materializer: Materializer = Materializer.createMaterializer(actorSystem)
   implicit val ec: ExecutionContextExecutor = ExecutionContext.global
 
-  val vmTable: VoyageManifestPassengerInfoTable = VoyageManifestPassengerInfoTable(H2Tables)
+  before {
+    InMemoryDatabase.dropAndCreateTables
+  }
 
-  import advancepassengerinfo.importer.InMemoryDatabase.tables.profile.api._
+  private val vmDao = VoyageManifestPassengerInfoDao
+  private val vmTable = TableQuery[tables.VoyageManifestPassengerInfoTable]
+  private val processedZipTable = TableQuery[ProcessedZipTable]
+  private val processedJsonTable = TableQuery[ProcessedJsonTable]
 
-  val persistence: Persistence = DbPersistenceImpl(InMemoryDatabase)
+  private val persistence: Persistence = DbPersistenceImpl(InMemoryDatabase)
 
   private val schDateStr = "2019-01-01"
   private val schDate = SDate(schDateStr)
@@ -37,7 +43,7 @@ class PersistenceSpec extends AnyWordSpec with Matchers with Builder {
     PassengerInfo(Some("P"), "GBR", "T", Some("1"), Some("LHR"), "N", Some("GBR"), Some("GBR"), Some("00001")),
     PassengerInfo(Some("I"), "GBR", "F", Some("2"), Some("LHR"), "N", Some("GBR"), Some("GBR"), Some("00002"))
   ))
-  val processedAt = SDate("2024-04-15T12:56:38.204").millisSinceEpoch
+  private val processedAt = SDate("2024-04-15T12:56").millisSinceEpoch
 
   "A request to insert a VoyageManifest" should {
     "result in a row being inserted for each passenger" in {
@@ -47,18 +53,18 @@ class PersistenceSpec extends AnyWordSpec with Matchers with Builder {
       ))
 
       val schTs = new Timestamp(vm.scheduleArrivalDateTime.map(_.millisSinceEpoch).getOrElse(0L))
-      val (dayOfWeek, weekOfYear) = Await.result(InMemoryDatabase.con.run(vmTable.dayOfWeekAndWeekOfYear(schTs)), 1 second).getOrElse((-1, -1))
+      val (dayOfWeek, weekOfYear) = Await.result(InMemoryDatabase.con.run(vmDao.dayOfWeekAndWeekOfYear(schTs)), 1 second).getOrElse((-1, -1))
 
       val jsonFile = "test.json"
-      Await.ready(InMemoryDatabase.con.run(vmTable.rowsToInsert(vm, dayOfWeek, weekOfYear, jsonFile)._2), 1 second)
+      Await.ready(InMemoryDatabase.con.run(vmDao.rowsToInsert(vm, dayOfWeek, weekOfYear, jsonFile)._2), 1 second)
 
-      val paxEntries = InMemoryDatabase.tables.VoyageManifestPassengerInfo.result
+      val paxEntries = vmTable.result
 
       val result = Await.result(InMemoryDatabase.con.run(paxEntries), 1 second)
 
       val expected = Vector(
-        InMemoryDatabase.tables.VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "P", "GBR", "T", 10, "LHR", "N", "GBR", "GBR", "12345", in_transit = false, jsonFile),
-        InMemoryDatabase.tables.VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "I", "GBR", "F", 25, "LHR", "N", "GBR", "GBR", "22331", in_transit = false, jsonFile))
+        VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "P", "GBR", "T", 10, "LHR", "N", "GBR", "GBR", "12345", in_transit = false, jsonFile),
+        VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "I", "GBR", "F", 25, "LHR", "N", "GBR", "GBR", "22331", in_transit = false, jsonFile))
 
       result should be(expected)
     }
@@ -77,23 +83,19 @@ class PersistenceSpec extends AnyWordSpec with Matchers with Builder {
       Await.ready(persistence.persistJsonFile(zipFile, jsonFile, successful = true, dateIsSuspicious = false, Option(vm), processedAt), 1 second)
       Await.ready(persistence.persistZipFile(zipFile, successful = true, processedAt), 1 second)
 
-      val paxEntries = InMemoryDatabase.tables.VoyageManifestPassengerInfo.result
+      val paxEntries = vmTable.result
       val paxRows = Await.result(InMemoryDatabase.con.run(paxEntries), 1 second)
-      val jsonEntries = InMemoryDatabase.tables.ProcessedJson.result
+      val jsonEntries = processedJsonTable.result
       val jsonRows = Await.result(InMemoryDatabase.con.run(jsonEntries), 1 second)
-      val zipEntries = InMemoryDatabase.tables.ProcessedZip.result
+      val zipEntries = processedZipTable.result
       val zipRows = Await.result(InMemoryDatabase.con.run(zipEntries), 1 second)
 
       val expectedPaxRows = Vector(
-        InMemoryDatabase.tables.VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "P", "GBR", "T", 1, "LHR", "N", "GBR", "GBR", "00001", in_transit = false, jsonFile),
-        InMemoryDatabase.tables.VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "I", "GBR", "F", 2, "LHR", "N", "GBR", "GBR", "00002", in_transit = false, jsonFile))
+        VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "P", "GBR", "T", 1, "LHR", "N", "GBR", "GBR", "00001", in_transit = false, jsonFile),
+        VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "I", "GBR", "F", 2, "LHR", "N", "GBR", "GBR", "00002", in_transit = false, jsonFile))
       val expectedJsonRows = List(ProcessedJsonRow(zipFile, jsonFile, false, true, new Timestamp(processedAt), Some("LHR"), Some("JFK"), Some(123), Some(new Timestamp(SDate("2019-01-01T06:00:00.0").millisSinceEpoch)), Some("DC"), Some(0), Some(0), Some(2), Some(0)))
-      val expectedZipRows = List(ProcessedZipRow(zipFile, true, new Timestamp(processedAt), Option(new Date(SDate("2024-04-15").millisSinceEpoch))))
+      val expectedZipRows = List(ProcessedZipRow(zipFile, true, new Timestamp(processedAt), Option("2024-04-15")))
 
-      println(s"date: ${zipRows.map(_.created_on.map(_.getTime))}")
-      println(s"date: ${expectedZipRows.map(_.created_on.map(_.getTime))}")
-
-      new Date(SDate("2024-04-15").millisSinceEpoch) should ===(new Date(SDate("2024-04-15").millisSinceEpoch))
       paxRows should ===(expectedPaxRows)
       jsonRows should ===(expectedJsonRows)
       zipRows should ===(expectedZipRows)
@@ -112,19 +114,17 @@ class PersistenceSpec extends AnyWordSpec with Matchers with Builder {
       val schTs = new Timestamp(vm.scheduleArrivalDateTime.map(_.millisSinceEpoch).getOrElse(0L))
 
       val jsonFile = "someJson"
-      val zipFile = "someZip"
-      val manifestSource = Source(List((zipFile, Success(List((jsonFile, Success(vm)), (jsonFile, Success(vm2)))))))
 
       Await.ready(persistence.persistManifest(jsonFile, vm), 1 second)
       Await.ready(persistence.persistManifest(jsonFile, vm2), 1 second)
 
-      val paxEntries = InMemoryDatabase.tables.VoyageManifestPassengerInfo.result
+      val paxEntries = vmTable.result
       val result = Await.result(InMemoryDatabase.con.run(paxEntries), 1 second).toSet
 
       val expected = Set(
-        InMemoryDatabase.tables.VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "P", "GBR", "T", 1, "LHR", "N", "GBR", "GBR", "00001", in_transit = false, jsonFile),
-        InMemoryDatabase.tables.VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "I", "GBR", "F", 2, "LHR", "N", "GBR", "GBR", "00002", in_transit = false, jsonFile),
-        InMemoryDatabase.tables.VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "P", "FRA", "T", 99, "LHR", "N", "GBR", "GBR", "00003", in_transit = false, jsonFile),
+        VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "P", "GBR", "T", 1, "LHR", "N", "GBR", "GBR", "00001", in_transit = false, jsonFile),
+        VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "I", "GBR", "F", 2, "LHR", "N", "GBR", "GBR", "00002", in_transit = false, jsonFile),
+        VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "P", "FRA", "T", 99, "LHR", "N", "GBR", "GBR", "00003", in_transit = false, jsonFile),
       )
 
       result should be(expected)
@@ -143,20 +143,17 @@ class PersistenceSpec extends AnyWordSpec with Matchers with Builder {
       val schTs = new Timestamp(vmDc.scheduleArrivalDateTime.map(_.millisSinceEpoch).getOrElse(0L))
 
       val jsonFile = "someJson"
-      val zipFile = "someZip"
-      val manifestSource = Source(List((zipFile, Success(List((jsonFile, Success(vmDc)))))))
-      val manifestSource2 = Source(List((zipFile, Success(List((jsonFile, Success(vmCi)))))))
 
       Await.ready(persistence.persistManifest(jsonFile, vmDc), 1 second)
       Await.ready(persistence.persistManifest(jsonFile, vmCi), 1 second)
 
-      val paxEntries = InMemoryDatabase.tables.VoyageManifestPassengerInfo.result
+      val paxEntries = vmTable.result
       val result = Await.result(InMemoryDatabase.con.run(paxEntries), 1 second)
 
       val expected = Vector(
-        InMemoryDatabase.tables.VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "P", "GBR", "T", 1, "LHR", "N", "GBR", "GBR", "00001", in_transit = false, jsonFile),
-        InMemoryDatabase.tables.VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "I", "GBR", "F", 2, "LHR", "N", "GBR", "GBR", "00002", in_transit = false, jsonFile),
-        InMemoryDatabase.tables.VoyageManifestPassengerInfoRow("CI", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "P", "FRA", "T", 99, "LHR", "N", "GBR", "GBR", "00003", in_transit = false, jsonFile))
+        VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "P", "GBR", "T", 1, "LHR", "N", "GBR", "GBR", "00001", in_transit = false, jsonFile),
+        VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "I", "GBR", "F", 2, "LHR", "N", "GBR", "GBR", "00002", in_transit = false, jsonFile),
+        VoyageManifestPassengerInfoRow("CI", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "P", "FRA", "T", 99, "LHR", "N", "GBR", "GBR", "00003", in_transit = false, jsonFile))
 
       result should be(expected)
     }
@@ -173,17 +170,15 @@ class PersistenceSpec extends AnyWordSpec with Matchers with Builder {
       val schTs = new Timestamp(vmDc.scheduleArrivalDateTime.map(_.millisSinceEpoch).getOrElse(0L))
 
       val jsonFile = "someJson"
-      val zipFile = "someZip"
-      val manifestSource = Source(List((zipFile, Success(List((jsonFile, Success(vmDc)))))))
 
       Await.ready(persistence.persistManifest(jsonFile, vmDc), 1 second)
 
-      val paxEntries = InMemoryDatabase.tables.VoyageManifestPassengerInfo.result
+      val paxEntries = vmTable.result
       val result = Await.result(InMemoryDatabase.con.run(paxEntries), 1 second)
 
       val expected = Vector(
-        InMemoryDatabase.tables.VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "P", "GBR", "T", 1, "LHR", "N", "GBR", "GBR", "00001", in_transit = false, jsonFile),
-        InMemoryDatabase.tables.VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "I", "GBR", "F", 2, "LHR", "N", "GBR", "GBR", "00002", in_transit = false, jsonFile))
+        VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "P", "GBR", "T", 1, "LHR", "N", "GBR", "GBR", "00001", in_transit = false, jsonFile),
+        VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "I", "GBR", "F", 2, "LHR", "N", "GBR", "GBR", "00002", in_transit = false, jsonFile))
 
       result should be(expected)
     }
@@ -191,32 +186,47 @@ class PersistenceSpec extends AnyWordSpec with Matchers with Builder {
 
   "Persisting a failed zip file" should {
     "result in an entry in the processed_zip table" in {
-      val zipFile = "someZip"
+      val zipFile = "drt_dq_240415_134518_2296.zip"
+      val processedAt = SDate("2024-04-15T12:56")
 
-      Await.ready(persistence.persistZipFile(zipFile, successful = false, 0L), 1 second)
+      Await.ready(persistence.persistZipFile(zipFile, successful = false, processedAt.millisSinceEpoch), 1 second)
 
-      val zipEntries = InMemoryDatabase.tables.ProcessedZip.result
-      val zipRowsAsTuple = Await.result(InMemoryDatabase.con.run(zipEntries), 1 second).map(r => (r.zip_file_name, r.success))
+      val zipEntries = processedZipTable.result
+      val zipRowsAsTuple = Await.result(InMemoryDatabase.con.run(zipEntries), 1 second)
 
-      val expected = List((zipFile, false))
+      val expected = List(tables.ProcessedZipRow(zipFile, false, new Timestamp(processedAt.millisSinceEpoch), Option("2024-04-15")))
 
-      zipRowsAsTuple should be (expected)
+      zipRowsAsTuple should ===(expected)
     }
   }
 
   "Persisting a failed json file" should {
     "result in an entry in the processed_json table" in {
-      val zipFile = "someJson"
+      val zipFile = "drt_dq_240415_134518_2296.zip"
       val jsonFile = "someJson"
-
-
 
       Await.ready(persistence.persistJsonFile(zipFile, jsonFile, successful = false, dateIsSuspicious = false, Option(vm), processedAt), 1 second)
 
-      val jsonEntries = InMemoryDatabase.tables.ProcessedJson.result
-      val jsonRowsAsTuple = Await.result(InMemoryDatabase.con.run(jsonEntries), 1 second).map(r => (r.zip_file_name, r.json_file_name, r.suspicious_date, r.success))
+      val jsonEntries = processedJsonTable.result
+      val jsonRowsAsTuple = Await.result(InMemoryDatabase.con.run(jsonEntries), 1 second)
 
-      val expected = List((zipFile, jsonFile, false, false))
+      val scheduled = new Timestamp(SDate("2019-01-01T06:00:00.0").millisSinceEpoch)
+
+      val expected = List(ProcessedJsonRow(
+        zip_file_name = "drt_dq_240415_134518_2296.zip",
+        json_file_name = "someJson",
+        suspicious_date = false,
+        success = false,
+        processed_at = new Timestamp(processedAt),
+        arrival_port_code = Some("LHR"),
+        departure_port_code = Some("JFK"),
+        voyage_number = Some(123),
+        scheduled = Some(scheduled),
+        event_code = Some("DC"),
+        non_interactive_total_count = Some(0),
+        non_interactive_trans_count = Some(0),
+        interactive_total_count = Some(2),
+        interactive_trans_count = Some(0)))
 
       jsonRowsAsTuple should be (expected)
     }
