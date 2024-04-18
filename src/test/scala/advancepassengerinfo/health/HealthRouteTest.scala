@@ -2,17 +2,22 @@ package advancepassengerinfo.health
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import drtlib.SDate
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-import java.time.Instant
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 
 class HealthRouteTest extends AnyFlatSpec with Matchers with ScalatestRouteTest {
 
+  private val threshold: FiniteDuration = 5.minutes
+
+  private val now: SDate = SDate("2021-01-01T00:00:00")
+
   "HealthRoute" should "return InternalServerError status if last checked is not updated" in {
 
-    val route = HealthRoute(LastCheckedState())
+    val route = HealthRoute(LastCheckedState(() => now), threshold)
 
     Get("/health-check") ~> route ~> check {
       status shouldBe StatusCodes.InternalServerError
@@ -22,11 +27,11 @@ class HealthRouteTest extends AnyFlatSpec with Matchers with ScalatestRouteTest 
 
   it should "return OK status if last checked is within 5 minutes" in {
 
-    val lastCheckedState = LastCheckedState()
+    val lastCheckedState = LastCheckedState(() => now)
 
-    lastCheckedState.setLastCheckedAt(Instant.now().minusSeconds(299))
+    lastCheckedState.setLastCheckedAt(now.minus(threshold.minus(1.second)))
 
-    val route = HealthRoute(lastCheckedState)
+    val route = HealthRoute(lastCheckedState, threshold)
 
     Get("/health-check") ~> route ~> check {
       status shouldBe StatusCodes.OK
@@ -35,11 +40,11 @@ class HealthRouteTest extends AnyFlatSpec with Matchers with ScalatestRouteTest 
 
   it should "return InternalServerError status if last checked is not with 5 minutes" in {
 
-    val lastCheckedState = LastCheckedState()
+    val lastCheckedState = LastCheckedState(() => now)
 
-    lastCheckedState.setLastCheckedAt(Instant.now().minusSeconds(300))
+    lastCheckedState.setLastCheckedAt(now.minus(threshold.plus(1.second)))
 
-    val route = HealthRoute(lastCheckedState)
+    val route = HealthRoute(lastCheckedState, threshold)
 
     Get("/health-check") ~> route ~> check {
       status shouldBe StatusCodes.InternalServerError

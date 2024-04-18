@@ -1,8 +1,9 @@
 package advancepassengerinfo.importer.persistence
 
 import advancepassengerinfo.importer.InMemoryDatabase.H2Tables.profile.api._
+import advancepassengerinfo.importer.slickdb.dao.{ProcessedJsonDaoImpl, ProcessedZipDaoImpl, VoyageManifestPassengerInfoDaoImpl}
 import advancepassengerinfo.importer.slickdb.tables._
-import advancepassengerinfo.importer.slickdb.{VoyageManifestPassengerInfoDao, tables}
+import advancepassengerinfo.importer.slickdb.tables
 import advancepassengerinfo.importer.{InMemoryDatabase, PostgresDateHelpers}
 import advancepassengerinfo.manifests.{PassengerInfo, VoyageManifest}
 import akka.actor.ActorSystem
@@ -28,20 +29,24 @@ class PersistenceSpec extends AnyWordSpec with Matchers with BeforeAndAfter {
     InMemoryDatabase.dropAndCreateTables
   }
 
-  private val vmDao = VoyageManifestPassengerInfoDao
-  private val vmTable = TableQuery[tables.VoyageManifestPassengerInfoTable]
-  private val processedZipTable = TableQuery[ProcessedZipTable]
-  private val processedJsonTable = TableQuery[ProcessedJsonTable]
+  private val manifestsDao = VoyageManifestPassengerInfoDaoImpl(InMemoryDatabase)
+  private val zipDao = ProcessedZipDaoImpl(InMemoryDatabase)
+  private val jsonDao = ProcessedJsonDaoImpl(InMemoryDatabase)
 
-  private val persistence: Persistence = DbPersistenceImpl(InMemoryDatabase)
+  private val manifestsTable = TableQuery[VoyageManifestPassengerInfoTable]
+  private val jsonTable = TableQuery[ProcessedJsonTable]
+  private val zipTable = TableQuery[ProcessedZipTable]
 
   private val schDateStr = "2019-01-01"
   private val schDate = SDate(schDateStr)
   private val schDayOfTheWeek: Int = PostgresDateHelpers.dayOfTheWeek(schDate)
 
-  private val vm = VoyageManifest("DC", "LHR", "JFK", "0123", "BA", schDateStr, "06:00", List(
+  private val validManifest = VoyageManifest("DC", "LHR", "JFK", "0123", "BA", schDateStr, "06:00", List(
     PassengerInfo(Some("P"), "GBR", "T", Some("1"), Some("LHR"), "N", Some("GBR"), Some("GBR"), Some("00001")),
     PassengerInfo(Some("I"), "GBR", "F", Some("2"), Some("LHR"), "N", Some("GBR"), Some("GBR"), Some("00002"))
+  ))
+  private val invalidManifest = VoyageManifest("DC", "LHR", "JFK", "0123", "BA", "yyyy-mm-dd", "06:00", List(
+    PassengerInfo(Some("P"), "GBR", "T", Some("1"), Some("LHR"), "N", Some("GBR"), Some("GBR"), Some("00001")),
   ))
   private val processedAt = SDate("2024-04-15T12:56").millisSinceEpoch
 
@@ -53,12 +58,12 @@ class PersistenceSpec extends AnyWordSpec with Matchers with BeforeAndAfter {
       ))
 
       val schTs = new Timestamp(vm.scheduleArrivalDateTime.map(_.millisSinceEpoch).getOrElse(0L))
-      val (dayOfWeek, weekOfYear) = Await.result(InMemoryDatabase.con.run(vmDao.dayOfWeekAndWeekOfYear(schTs)), 1 second).getOrElse((-1, -1))
+      val (dayOfWeek, weekOfYear) = Await.result(manifestsDao.dayOfWeekAndWeekOfYear(schTs), 1 second)
 
       val jsonFile = "test.json"
-      Await.ready(InMemoryDatabase.con.run(vmDao.rowsToInsert(vm, dayOfWeek, weekOfYear, jsonFile)._2), 1 second)
+      Await.ready(manifestsDao.insertManifest(vm, dayOfWeek, weekOfYear, jsonFile), 1 second)
 
-      val paxEntries = vmTable.result
+      val paxEntries = manifestsTable.result
 
       val result = Await.result(InMemoryDatabase.con.run(paxEntries), 1 second)
 
@@ -72,33 +77,37 @@ class PersistenceSpec extends AnyWordSpec with Matchers with BeforeAndAfter {
 
   "A request to persist a VoyageManifest from a zip file" should {
     "result in entries in the VoyageManifestPassenger & ProcessedJson & ProcessedZip tables" in {
-      val schTs = new Timestamp(vm.scheduleArrivalDateTime.map(_.millisSinceEpoch).getOrElse(0L))
+      val schTs = new Timestamp(validManifest.scheduleArrivalDateTime.map(_.millisSinceEpoch).getOrElse(0L))
 
       val jsonFile = "someJson"
       val zipFile = "drt_dq_240415_134518_2296.zip"
 
       val processedAt = SDate("2024-04-15T12:56:38.204").millisSinceEpoch
 
-      Await.ready(persistence.persistManifest(jsonFile, vm), 1 second)
-      Await.ready(persistence.persistJsonFile(zipFile, jsonFile, successful = true, dateIsSuspicious = false, Option(vm), processedAt), 1 second)
-      Await.ready(persistence.persistZipFile(zipFile, successful = true, processedAt), 1 second)
+      Await.ready(manifestsDao.persistManifest(jsonFile, validManifest, validManifest.scheduleArrivalDateTime.get), 1 second)
+      Await.ready(jsonDao.persistJsonFile(zipFile, jsonFile, successful = true, dateIsSuspicious = false, Option(validManifest), processedAt), 1 second)
+      val maybeCreatedOn = ProcessedZipRow.extractCreatedOn(zipFile)
+      val zipRow = ProcessedZipRow(zipFile, success = true, new Timestamp(processedAt), maybeCreatedOn)
+      Await.ready(zipDao.insert(zipRow), 1 second)
 
-      val paxEntries = vmTable.result
+      val paxEntries = manifestsTable.result
       val paxRows = Await.result(InMemoryDatabase.con.run(paxEntries), 1 second)
-      val jsonEntries = processedJsonTable.result
+      val jsonEntries = jsonTable.result
       val jsonRows = Await.result(InMemoryDatabase.con.run(jsonEntries), 1 second)
-      val zipEntries = processedZipTable.result
+      val zipEntries = zipTable.result
       val zipRows = Await.result(InMemoryDatabase.con.run(zipEntries), 1 second)
+      val lastPersistedFileName = Await.result(zipDao.lastPersistedFileName, 1 second)
 
       val expectedPaxRows = Vector(
         VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "P", "GBR", "T", 1, "LHR", "N", "GBR", "GBR", "00001", in_transit = false, jsonFile),
         VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "I", "GBR", "F", 2, "LHR", "N", "GBR", "GBR", "00002", in_transit = false, jsonFile))
-      val expectedJsonRows = List(ProcessedJsonRow(zipFile, jsonFile, false, true, new Timestamp(processedAt), Some("LHR"), Some("JFK"), Some(123), Some(new Timestamp(SDate("2019-01-01T06:00:00.0").millisSinceEpoch)), Some("DC"), Some(0), Some(0), Some(2), Some(0)))
-      val expectedZipRows = List(ProcessedZipRow(zipFile, true, new Timestamp(processedAt), Option("2024-04-15")))
+      val expectedJsonRows = List(ProcessedJsonRow(zipFile, jsonFile, suspicious_date = false, success = true, new Timestamp(processedAt), Some("LHR"), Some("JFK"), Some(123), Some(new Timestamp(SDate("2019-01-01T06:00:00.0").millisSinceEpoch)), Some("DC"), Some(0), Some(0), Some(2), Some(0)))
+      val expectedZipRows = List(ProcessedZipRow(zipFile, success = true, new Timestamp(processedAt), Option("2024-04-15")))
 
       paxRows should ===(expectedPaxRows)
       jsonRows should ===(expectedJsonRows)
       zipRows should ===(expectedZipRows)
+      lastPersistedFileName should ===(Some(zipFile))
     }
   }
 
@@ -115,10 +124,10 @@ class PersistenceSpec extends AnyWordSpec with Matchers with BeforeAndAfter {
 
       val jsonFile = "someJson"
 
-      Await.ready(persistence.persistManifest(jsonFile, vm), 1 second)
-      Await.ready(persistence.persistManifest(jsonFile, vm2), 1 second)
+      Await.ready(manifestsDao.persistManifest(jsonFile, vm, vm.scheduleArrivalDateTime.get), 1 second)
+      Await.ready(manifestsDao.persistManifest(jsonFile, vm2, vm2.scheduleArrivalDateTime.get), 1 second)
 
-      val paxEntries = vmTable.result
+      val paxEntries = manifestsTable.result
       val result = Await.result(InMemoryDatabase.con.run(paxEntries), 1 second).toSet
 
       val expected = Set(
@@ -144,10 +153,10 @@ class PersistenceSpec extends AnyWordSpec with Matchers with BeforeAndAfter {
 
       val jsonFile = "someJson"
 
-      Await.ready(persistence.persistManifest(jsonFile, vmDc), 1 second)
-      Await.ready(persistence.persistManifest(jsonFile, vmCi), 1 second)
+      Await.ready(manifestsDao.persistManifest(jsonFile, vmDc, vmDc.scheduleArrivalDateTime.get), 1 second)
+      Await.ready(manifestsDao.persistManifest(jsonFile, vmCi, vmCi.scheduleArrivalDateTime.get), 1 second)
 
-      val paxEntries = vmTable.result
+      val paxEntries = manifestsTable.result
       val result = Await.result(InMemoryDatabase.con.run(paxEntries), 1 second)
 
       val expected = Vector(
@@ -171,9 +180,9 @@ class PersistenceSpec extends AnyWordSpec with Matchers with BeforeAndAfter {
 
       val jsonFile = "someJson"
 
-      Await.ready(persistence.persistManifest(jsonFile, vmDc), 1 second)
+      Await.ready(manifestsDao.persistManifest(jsonFile, vmDc, vmDc.scheduleArrivalDateTime.get), 1 second)
 
-      val paxEntries = vmTable.result
+      val paxEntries = manifestsTable.result
       val result = Await.result(InMemoryDatabase.con.run(paxEntries), 1 second)
 
       val expected = Vector(
@@ -189,12 +198,14 @@ class PersistenceSpec extends AnyWordSpec with Matchers with BeforeAndAfter {
       val zipFile = "drt_dq_240415_134518_2296.zip"
       val processedAt = SDate("2024-04-15T12:56")
 
-      Await.ready(persistence.persistZipFile(zipFile, successful = false, processedAt.millisSinceEpoch), 1 second)
+      val maybeCreatedOn = ProcessedZipRow.extractCreatedOn(zipFile)
+      val zipRow = ProcessedZipRow(zipFile, success = false, new Timestamp(processedAt.millisSinceEpoch), maybeCreatedOn)
+      Await.ready(zipDao.insert(zipRow), 1 second)
 
-      val zipEntries = processedZipTable.result
+      val zipEntries = zipTable.result
       val zipRowsAsTuple = Await.result(InMemoryDatabase.con.run(zipEntries), 1 second)
 
-      val expected = List(tables.ProcessedZipRow(zipFile, false, new Timestamp(processedAt.millisSinceEpoch), Option("2024-04-15")))
+      val expected = List(tables.ProcessedZipRow(zipFile, success = false, new Timestamp(processedAt.millisSinceEpoch), Option("2024-04-15")))
 
       zipRowsAsTuple should ===(expected)
     }
@@ -205,9 +216,9 @@ class PersistenceSpec extends AnyWordSpec with Matchers with BeforeAndAfter {
       val zipFile = "drt_dq_240415_134518_2296.zip"
       val jsonFile = "someJson"
 
-      Await.ready(persistence.persistJsonFile(zipFile, jsonFile, successful = false, dateIsSuspicious = false, Option(vm), processedAt), 1 second)
+      Await.ready(jsonDao.persistJsonFile(zipFile, jsonFile, successful = false, dateIsSuspicious = false, Option(validManifest), processedAt), 1 second)
 
-      val jsonEntries = processedJsonTable.result
+      val jsonEntries = jsonTable.result
       val jsonRowsAsTuple = Await.result(InMemoryDatabase.con.run(jsonEntries), 1 second)
 
       val scheduled = new Timestamp(SDate("2019-01-01T06:00:00.0").millisSinceEpoch)
@@ -228,7 +239,32 @@ class PersistenceSpec extends AnyWordSpec with Matchers with BeforeAndAfter {
         interactive_total_count = Some(2),
         interactive_trans_count = Some(0)))
 
-      jsonRowsAsTuple should be (expected)
+      jsonRowsAsTuple should be(expected)
     }
   }
+
+//  "Persisting a manifest with an nonsense schedule date" should {
+//    "result in no row being inserted and a Future(None) return value" in {
+//      val result = Await.ready(manifestsDao.persistManifest("someJson", invalidManifest, invalidManifest.scheduleArrivalDateTime.get), 1 second)
+//      val rows = Await.result(InMemoryDatabase.con.run(manifestsTable.result), 1 second)
+//      result.value.get.get should be(None)
+//      rows should be(empty)
+//    }
+//  }
+
+//  "When a persisting a manifest throws an exception then the exception is caught and logged" in {
+//    dropTables()
+//    val result = Await.ready(manifestsDao.persistManifest("someJson", validManifest, validManifest.scheduleArrivalDateTime.get), 1 second)
+//    result.value.get.get should be(None)
+//  }
+
+  private def dropTables(): Unit =
+    Await.result(
+      InMemoryDatabase.con.run(DBIO.seq(
+        TableQuery[ProcessedZipTable].schema.dropIfExists,
+        TableQuery[ProcessedJsonTable].schema.dropIfExists,
+        TableQuery[VoyageManifestPassengerInfoTable].schema.dropIfExists,
+      )
+      ), 1.second
+    )
 }

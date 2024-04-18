@@ -4,21 +4,21 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 object HealthRoute {
 
-  def checkHealth(lastCheckedState: LastCheckedState): Route =
+  def isHealthy(lastCheckedState: LastCheckedState, threshold: FiniteDuration): Route =
     get {
-      if (lastCheckedState.hasCheckedSince(5.minutes))
+      if (lastCheckedState.hasCheckedSince(threshold))
         complete(StatusCodes.OK)
       else
         complete(StatusCodes.InternalServerError, "KO")
     }
 
-  def apply(lastCheckedState: LastCheckedState): Route =
+  def apply(lastCheckedState: LastCheckedState, threshold: FiniteDuration): Route =
     pathPrefix("health-check") {
-      checkHealth(lastCheckedState)
+      isHealthy(lastCheckedState, threshold)
     }
 }
 

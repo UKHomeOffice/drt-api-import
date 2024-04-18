@@ -1,13 +1,14 @@
 package advancepassengerinfo.importer.provider
 
 import advancepassengerinfo.health.LastCheckedState
+import advancepassengerinfo.importer.DqApiFeedImpl
 import advancepassengerinfo.importer.processor.DqFileProcessor
-import advancepassengerinfo.importer.{DqApiFeedImpl, InMemoryDatabase}
-import advancepassengerinfo.importer.slickdb.VoyageManifestPassengerInfoDao
+import advancepassengerinfo.importer.slickdb.dao.VoyageManifestPassengerInfoDao
 import akka.actor.{ActorRef, ActorSystem}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.{KillSwitches, UniqueKillSwitch}
 import akka.testkit.{TestKit, TestProbe}
+import drtlib.SDate
 import metrics.MetricsCollectorLike
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -50,7 +51,7 @@ class DqApiFeedImplSpec extends TestKit(ActorSystem("MySpec"))
 
   implicit val ec: ExecutionContextExecutor = system.dispatcher
 
-  val vmTable = VoyageManifestPassengerInfoDao
+//  val vmTable = VoyageManifestPassengerInfoDao
 
   "An importer" should {
     "send all the files from an s3 file name provider in sequence" in {
@@ -59,7 +60,7 @@ class DqApiFeedImplSpec extends TestKit(ActorSystem("MySpec"))
       val batchedFileNames = List(List("a", "b"), List("c", "d"), List("e", "f"))
       val mockFileNames = MockFileNames(batchedFileNames)
       val mockProcessor = MockDqFileProcessor(filesProbe.ref)
-      val importer = DqApiFeedImpl(mockFileNames, mockProcessor, 100.millis, MockStatsDCollector, LastCheckedState())
+      val importer = DqApiFeedImpl(mockFileNames, mockProcessor, 100.millis, MockStatsDCollector, LastCheckedState(() => SDate.now()))
 
       val killSwitch: UniqueKillSwitch = importer.processFilesAfter("").viaMat(KillSwitches.single)(Keep.right).toMat(Sink.ignore)(Keep.left).run()
 

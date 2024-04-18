@@ -1,16 +1,18 @@
 package advancepassengerinfo.health
 
-import java.time.{Duration, Instant}
-import scala.concurrent.duration.FiniteDuration
+import drtlib.SDate
 
-case class LastCheckedState() {
-  var lastCheckedAt: Option[Instant] = None
+import scala.concurrent.duration.{DurationLong, FiniteDuration}
 
-  def hasCheckedSince(durationInMin: FiniteDuration): Boolean = {
-    lastCheckedAt.exists(lca => Duration.between(lca, Instant.now()).compareTo(Duration.ofMillis(durationInMin.toMillis)) < 0)
-  }
+case class LastCheckedState(now: () => SDate) {
+  private var lastCheckedAt: Option[SDate] = None
 
-  def setLastCheckedAt(at:Instant): Unit = {
-    lastCheckedAt = Some(at)
-  }
+  def hasCheckedSince(threshold: FiniteDuration): Boolean =
+    lastCheckedAt
+      .exists { lca =>
+        val lastCheckedAgo = (now().millisSinceEpoch - lca.millisSinceEpoch).millis
+        lastCheckedAgo <= threshold
+      }
+
+  def setLastCheckedAt(at: SDate): Unit = lastCheckedAt = Some(at)
 }

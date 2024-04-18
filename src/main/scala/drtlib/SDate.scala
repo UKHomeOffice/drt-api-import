@@ -4,6 +4,8 @@ import drtlib.SDate.implicits
 import org.joda.time.{DateTime, DateTimeZone}
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.concurrent.duration.FiniteDuration
+
 case class SDate(dateTime: DateTime) {
 
   import implicits._
@@ -16,11 +18,11 @@ case class SDate(dateTime: DateTime) {
 
   def date: Int = dateTime.getDayOfMonth
 
-  def hour: Int = dateTime.getHourOfDay
-
   def minute: Int = dateTime.getMinuteOfHour
 
-  def addDays(daysToAdd: Int): SDate = dateTime.plusDays(daysToAdd)
+  def plus(i: FiniteDuration): SDate = dateTime.plus(i.toMillis)
+
+  def minus(i: FiniteDuration): SDate = dateTime.minus(i.toMillis)
 
   def millisSinceEpoch: Long = dateTime.getMillis
 

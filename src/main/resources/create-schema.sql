@@ -58,7 +58,7 @@ CREATE TABLE public.processed_zip (
     zip_file_name character varying (50),
     success boolean,
     processed_at timestamp without time zone,
-    created_on date
+    created_on varchar(10)
 );
 
 CREATE INDEX processed_zip_zip_file_name ON public.processed_zip (zip_file_name);

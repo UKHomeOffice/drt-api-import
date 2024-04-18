@@ -1,22 +1,12 @@
-package advancepassengerinfo.importer.slickdb
+package advancepassengerinfo.importer.slickdb.serialisation
 
+import advancepassengerinfo.importer.slickdb.tables.VoyageManifestPassengerInfoRow
 import advancepassengerinfo.manifests.{PassengerInfo, VoyageManifest}
-import DatabaseImpl.profile.api._
-import advancepassengerinfo.importer.slickdb.tables.{VoyageManifestPassengerInfoRow, VoyageManifestPassengerInfoTable}
 
 import java.sql.Timestamp
-import scala.concurrent.ExecutionContext
 import scala.util.Try
 
-
-object VoyageManifestPassengerInfoDao {
-  lazy val voyageManifestPassengerInfo = TableQuery[VoyageManifestPassengerInfoTable]
-
-  def rowsToInsert(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, jsonFile: String): (Int, DBIOAction[Unit, NoStream, Effect.Write]) = {
-    val rows = voyageManifestRows(vm, dayOfWeek, weekOfYear, jsonFile)
-    (rows.size, DBIO.seq(voyageManifestPassengerInfo ++= rows))
-  }
-
+object VoyageManifestSerialisation {
   def voyageManifestRows(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, jsonFile: String): List[VoyageManifestPassengerInfoRow] = {
     val schTs = new Timestamp(vm.scheduleArrivalDateTime.map(_.millisSinceEpoch).getOrElse(0L))
 
@@ -50,6 +40,4 @@ object VoyageManifestPassengerInfoDao {
     )
   }
 
-  def dayOfWeekAndWeekOfYear(date: Timestamp)(implicit ec: ExecutionContext): DBIOAction[Option[(Int, Int)], NoStream, Effect] =
-    sql"""SELECT EXTRACT(DOW FROM TIMESTAMP'#$date'), EXTRACT(WEEK FROM TIMESTAMP'#$date')""".as[(Int, Int)].map(_.headOption)
 }

@@ -1,10 +1,10 @@
 package advancepassengerinfo.importer
 
 import advancepassengerinfo.health.{HealthRoute, LastCheckedState}
-import advancepassengerinfo.importer.persistence.DbPersistenceImpl
 import advancepassengerinfo.importer.processor.DqFileProcessorImpl
 import advancepassengerinfo.importer.provider._
 import advancepassengerinfo.importer.slickdb.DatabaseImpl
+import advancepassengerinfo.importer.slickdb.dao.{ProcessedJsonDao, ProcessedJsonDaoImpl, ProcessedZipDaoImpl, VoyageManifestPassengerInfoDao, VoyageManifestPassengerInfoDaoImpl}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.scaladsl.{Sink, Source}
@@ -13,19 +13,15 @@ import com.typesafe.scalalogging.Logger
 import drtlib.SDate
 import drtlib.SDate.yyyyMMdd
 import metrics.StatsDMetrics
-import slick.jdbc.PostgresProfile
+import slick.dbio.{DBIOAction, NoStream}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 
 import java.util.TimeZone
 import scala.concurrent.duration.{Duration, DurationInt}
-import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
+import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 
-
-object PostgresTables extends {
-  val profile = PostgresProfile
-}
 
 object Main extends App {
   val log = Logger(getClass)
@@ -34,16 +30,16 @@ object Main extends App {
   implicit val actorSystem: ActorSystem = ActorSystem("api-data-import")
   implicit val ec: ExecutionContextExecutor = ExecutionContext.global
 
-  def defaultTimeZone: String = TimeZone.getDefault.getID
+  private def defaultTimeZone: String = TimeZone.getDefault.getID
 
-  def systemTimeZone: String = System.getProperty("user.timezone")
+  private def systemTimeZone: String = System.getProperty("user.timezone")
 
   assert(systemTimeZone == "UTC", "System Timezone is not set to UTC")
   assert(defaultTimeZone == "UTC", "Default Timezone is not set to UTC")
 
   private val bucketName = config.getString("s3.api-data.bucket-name")
 
-  val lastCheckedState = LastCheckedState()
+  val lastCheckedState = LastCheckedState(() => SDate.now())
 
   private def s3Client: S3AsyncClient = {
     val accessKey = config.getString("s3.api-data.credentials.access_key_id")
@@ -56,17 +52,19 @@ object Main extends App {
       .build()
   }
 
-  val s3FileNamesProvider = S3FileNames(s3Client, bucketName)
-  val s3FileAsStream = S3FileAsStream(s3Client, bucketName)
-  val manifestsProvider = ZippedManifests(s3FileAsStream)
-  val persistence = DbPersistenceImpl(PostgresDb)
-  val zipProcessor = DqFileProcessorImpl(manifestsProvider, persistence)
-  val feed = DqApiFeedImpl(s3FileNamesProvider, zipProcessor, 1.minute, StatsDMetrics, lastCheckedState)
+  private val s3FileNamesProvider = S3FileNames(s3Client, bucketName)
+  private val s3FileAsStream = S3FileAsStream(s3Client, bucketName)
+  private val manifestsProvider = ZippedManifests(s3FileAsStream)
+  private val zipDao = ProcessedZipDaoImpl(PostgresDb)
+  private val jsonDao = ProcessedJsonDaoImpl(PostgresDb)
+  private val manifestsDao = VoyageManifestPassengerInfoDaoImpl(PostgresDb)
+  private val zipProcessor = DqFileProcessorImpl(manifestsProvider, zipDao, jsonDao, manifestsDao)
+  private val feed = DqApiFeedImpl(s3FileNamesProvider, zipProcessor, 1.minute, StatsDMetrics, lastCheckedState)
 
-  Http().newServerAt(config.getString("server.host"), config.getInt("server.port")).bind(HealthRoute(lastCheckedState))
+  Http().newServerAt(config.getString("server.host"), config.getInt("server.port")).bind(HealthRoute(lastCheckedState, 5.minutes))
 
-  val eventual = Source
-    .future(persistence.lastPersistedFileName)
+  private val eventual = Source
+    .future(zipDao.lastPersistedFileName)
     .recover {
       case t =>
         log.error(s"Failed to get last persisted file name: ${t.getMessage}")
@@ -78,8 +76,7 @@ object Main extends App {
         log.info(s"Last processed file: $lastFileName")
         feed.processFilesAfter(lastFileName)
       case None =>
-        val twoDaysAgo = -2
-        val date = SDate.now().addDays(twoDaysAgo)
+        val date = SDate.now().plus(2.days)
         val yyyymmdd: String = yyyyMMdd(date)
         val lastFilename = "drt_dq_" + yyyymmdd + "_000000_0000.zip"
         log.info(s"No last processed file. Starting from 2 days ago ($yyyymmdd)")
@@ -91,7 +88,8 @@ object Main extends App {
 
 trait Db {
   val profile: slick.jdbc.JdbcProfile
-  val con: profile.backend.Database
+  protected val con: profile.backend.Database
+  def run[T]: DBIOAction[T, NoStream, Nothing] => Future[T] = con.run
 }
 
 object PostgresDb extends Db {
