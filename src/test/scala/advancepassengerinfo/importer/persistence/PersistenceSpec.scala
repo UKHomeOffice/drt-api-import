@@ -101,7 +101,7 @@ class PersistenceSpec extends AnyWordSpec with Matchers with BeforeAndAfter {
       val expectedPaxRows = Vector(
         VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "P", "GBR", "T", 1, "LHR", "N", "GBR", "GBR", "00001", in_transit = false, jsonFile),
         VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 123, "BA", schTs, schDayOfTheWeek, 1, "I", "GBR", "F", 2, "LHR", "N", "GBR", "GBR", "00002", in_transit = false, jsonFile))
-      val expectedJsonRows = List(ProcessedJsonRow(zipFile, jsonFile, suspicious_date = false, success = true, new Timestamp(processedAt), Some("LHR"), Some("JFK"), Some(123), Some(new Timestamp(SDate("2019-01-01T06:00:00.0").millisSinceEpoch)), Some("DC"), Some(0), Some(0), Some(2), Some(0)))
+      val expectedJsonRows = List(ProcessedJsonRow(zipFile, jsonFile, suspicious_date = false, success = true, new Timestamp(processedAt), Some("LHR"), Some("JFK"), Some(123), Some("BA"), Some(new Timestamp(SDate("2019-01-01T06:00:00.0").millisSinceEpoch)), Some("DC"), Some(0), Some(0), Some(2), Some(0)))
       val expectedZipRows = List(ProcessedZipRow(zipFile, success = true, new Timestamp(processedAt), Option("2024-04-15")))
 
       paxRows should ===(expectedPaxRows)
@@ -232,31 +232,18 @@ class PersistenceSpec extends AnyWordSpec with Matchers with BeforeAndAfter {
         arrival_port_code = Some("LHR"),
         departure_port_code = Some("JFK"),
         voyage_number = Some(123),
+        carrier_code = Some("BA"),
         scheduled = Some(scheduled),
         event_code = Some("DC"),
         non_interactive_total_count = Some(0),
         non_interactive_trans_count = Some(0),
         interactive_total_count = Some(2),
-        interactive_trans_count = Some(0)))
+        interactive_trans_count = Some(0),
+      ))
 
       jsonRowsAsTuple should be(expected)
     }
   }
-
-//  "Persisting a manifest with an nonsense schedule date" should {
-//    "result in no row being inserted and a Future(None) return value" in {
-//      val result = Await.ready(manifestsDao.persistManifest("someJson", invalidManifest, invalidManifest.scheduleArrivalDateTime.get), 1 second)
-//      val rows = Await.result(InMemoryDatabase.con.run(manifestsTable.result), 1 second)
-//      result.value.get.get should be(None)
-//      rows should be(empty)
-//    }
-//  }
-
-//  "When a persisting a manifest throws an exception then the exception is caught and logged" in {
-//    dropTables()
-//    val result = Await.ready(manifestsDao.persistManifest("someJson", validManifest, validManifest.scheduleArrivalDateTime.get), 1 second)
-//    result.value.get.get should be(None)
-//  }
 
   private def dropTables(): Unit =
     Await.result(

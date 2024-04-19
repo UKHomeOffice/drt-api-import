@@ -17,7 +17,7 @@ trait VoyageManifestPassengerInfoDao {
 
 case class VoyageManifestPassengerInfoDaoImpl(db: Db)
                                              (implicit ec: ExecutionContext) extends VoyageManifestPassengerInfoDao {
-  private val voyageManifestPassengerInfo = TableQuery[VoyageManifestPassengerInfoTable]
+  private val table = TableQuery[VoyageManifestPassengerInfoTable]
 
   def persistManifest(jsonFileName: String, manifest: VoyageManifest, scheduledDate: SDate): Future[Option[Int]] =
     dayOfWeekAndWeekOfYear(new Timestamp(scheduledDate.millisSinceEpoch))
@@ -29,7 +29,7 @@ case class VoyageManifestPassengerInfoDaoImpl(db: Db)
 
   def insertManifest(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, jsonFile: String): Future[Int] = {
     val rows = voyageManifestRows(vm, dayOfWeek, weekOfYear, jsonFile)
-    db.run(DBIO.seq(voyageManifestPassengerInfo ++= rows)).map(_ => rows.size)
+    db.run(DBIO.seq(table ++= rows)).map(_ => rows.size)
   }
 
   def dayOfWeekAndWeekOfYear(date: Timestamp)
@@ -41,4 +41,9 @@ case class VoyageManifestPassengerInfoDaoImpl(db: Db)
           throw new Exception("Failed to get day of week and week of year from date")
       }
     })
+
+  def delete(jsonFileName: String): Future[Int] = {
+    val query = table.filter(_.json_file === jsonFileName).delete
+    db.run(query)
+  }
 }

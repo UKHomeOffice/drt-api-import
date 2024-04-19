@@ -17,33 +17,6 @@ object MockPersistence {
   case class ZipFileCall(zipFileName: String, successful: Boolean)
 }
 
-//case class MockPersistence(probe: ActorRef) extends Persistence {
-//  override def persistManifest(jsonFileName: String, manifest: VoyageManifest): Future[Option[Int]] = {
-//    probe ! ManifestCall(jsonFileName, manifest)
-//    Future.successful(Option(1))
-//  }
-//
-//  override def persistJsonFile(zipFileName: String,
-//                               jsonFileName: String,
-//                               successful: Boolean,
-//                               dateIsSuspicious: Boolean,
-//                               maybeManifest: Option[VoyageManifest],
-//                               processedAt: Long,
-//                              ): Future[Int] = {
-//    probe ! JsonFileCall(zipFileName, jsonFileName, successful, dateIsSuspicious)
-//    Future.successful(1)
-//  }
-//
-//  override def persistZipFile(zipFileName: String, successful: Boolean, processedAt: Long): Future[Unit] = {
-//    probe ! ZipFileCall(zipFileName, successful)
-//    Future.successful()
-//  }
-//
-//  override def lastPersistedFileName: Future[Option[String]] = Future.successful(Option("_"))
-//
-//  override def jsonHasBeenProcessed(zipFileName: String, jsonFileName: String): Future[Boolean] = Future.successful(false)
-//}
-
 case class MockZipDao(probe: ActorRef) extends ProcessedZipDao {
   override def insert(row: ProcessedZipRow): Future[Unit] = {
     probe ! ZipFileCall(row.zip_file_name, row.success)

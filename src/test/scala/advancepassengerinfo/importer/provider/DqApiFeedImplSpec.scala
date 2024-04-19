@@ -3,7 +3,6 @@ package advancepassengerinfo.importer.provider
 import advancepassengerinfo.health.LastCheckedState
 import advancepassengerinfo.importer.DqApiFeedImpl
 import advancepassengerinfo.importer.processor.DqFileProcessor
-import advancepassengerinfo.importer.slickdb.dao.VoyageManifestPassengerInfoDao
 import akka.actor.{ActorRef, ActorSystem}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.{KillSwitches, UniqueKillSwitch}
@@ -50,8 +49,6 @@ class DqApiFeedImplSpec extends TestKit(ActorSystem("MySpec"))
   }
 
   implicit val ec: ExecutionContextExecutor = system.dispatcher
-
-//  val vmTable = VoyageManifestPassengerInfoDao
 
   "An importer" should {
     "send all the files from an s3 file name provider in sequence" in {

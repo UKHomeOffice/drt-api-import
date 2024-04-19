@@ -22,4 +22,9 @@ case class ProcessedZipDaoImpl(db: Db) extends ProcessedZipDao {
     val sourceFileNamesQuery = table.map(_.zip_file_name)
     db.run(sourceFileNamesQuery.max.result)
   }
+
+  def delete(zipFileName: String): Future[Int] = {
+    val query = table.filter(_.zip_file_name === zipFileName).delete
+    db.run(query)
+  }
 }
