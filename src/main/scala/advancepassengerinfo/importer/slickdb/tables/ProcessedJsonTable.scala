@@ -11,18 +11,18 @@ class ProcessedJsonTable(_tableTag: Tag) extends Table[ProcessedJsonRow](_tableT
   val suspicious_date: Rep[Boolean] = column[Boolean]("suspicious_date")
   val success: Rep[Boolean] = column[Boolean]("success")
   val processed_at: Rep[Timestamp] = column[Timestamp]("processed_at")
-  val arrival_port_code: Rep[Option[String]] = column[String]("arrival_port_code")
-  val departure_port_code: Rep[Option[String]] = column[String]("departure_port_code")
-  val voyage_number: Rep[Option[Int]] = column[Int]("voyage_number")
-  val carrier_code: Rep[Option[String]] = column[String]("carrier_code")
-  val scheduled: Rep[Option[Timestamp]] = column[Timestamp]("scheduled_date")
-  val event_code: Rep[Option[String]] = column[String]("event_code")
-  val non_interactive_total_count: Rep[Option[Int]] = column[Int]("non_interactive_total_count")
-  val non_interactive_trans_count: Rep[Option[Int]] = column[Int]("non_interactive_trans_count")
-  val interactive_total_count: Rep[Option[Int]] = column[Int]("interactive_total_count")
-  val interactive_trans_count: Rep[Option[Int]] = column[Int]("interactive_trans_count")
+  val arrival_port_code: Rep[Option[String]] = column[Option[String]]("arrival_port_code")
+  val departure_port_code: Rep[Option[String]] = column[Option[String]]("departure_port_code")
+  val voyage_number: Rep[Option[Int]] = column[Option[Int]]("voyage_number")
+  val carrier_code: Rep[Option[String]] = column[Option[String]]("carrier_code")
+  val scheduled: Rep[Option[Timestamp]] = column[Option[Timestamp]]("scheduled")
+  val event_code: Rep[Option[String]] = column[Option[String]]("event_code")
+  val non_interactive_total_count: Rep[Option[Int]] = column[Option[Int]]("non_interactive_total_count")
+  val non_interactive_trans_count: Rep[Option[Int]] = column[Option[Int]]("non_interactive_trans_count")
+  val interactive_total_count: Rep[Option[Int]] = column[Option[Int]]("interactive_total_count")
+  val interactive_trans_count: Rep[Option[Int]] = column[Option[Int]]("interactive_trans_count")
 
   def * = (zip_file_name, json_file_name, suspicious_date, success, processed_at,
     arrival_port_code, departure_port_code, voyage_number, carrier_code, scheduled,
-    event_code, non_interactive_total_count, interactive_total_count, non_interactive_trans_count, interactive_trans_count) <> (ProcessedJsonRow.tupled, ProcessedJsonRow.unapply)
+    event_code, non_interactive_total_count, non_interactive_trans_count, interactive_total_count, interactive_trans_count).mapTo[ProcessedJsonRow]
 }

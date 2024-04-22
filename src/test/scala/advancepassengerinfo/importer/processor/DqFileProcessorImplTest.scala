@@ -6,7 +6,7 @@ import advancepassengerinfo.importer.persistence.MockPersistence.{JsonFileCall, 
 import advancepassengerinfo.importer.persistence.{MockJsonDao, MockVoyageManifestPassengerInfoDao, MockZipDao}
 import advancepassengerinfo.importer.provider.{FileNames, Manifests, MockFileNames, MockStatsDCollector}
 import advancepassengerinfo.importer.slickdb.dao.{ProcessedJsonDao, ProcessedJsonDaoImpl, ProcessedZipDao, ProcessedZipDaoImpl}
-import advancepassengerinfo.importer.slickdb.tables.ProcessedZipRow
+import advancepassengerinfo.importer.slickdb.tables.{ProcessedJsonRow, ProcessedZipRow, VoyageManifestPassengerInfoRow}
 import advancepassengerinfo.importer.{DqApiFeedImpl, InMemoryDatabase}
 import advancepassengerinfo.manifests.VoyageManifest
 import akka.NotUsed
@@ -109,7 +109,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
       val processor = DqFileProcessorImpl(singleZipMockProvider(Seq(jsonWithSuccessfulManifest)), mockZipDao, mockJsonDao, mockManifestsDao)
       val result = Await.result(processor.process(zipFileName).runWith(Sink.seq), 1.second)
 
-      probe.expectMsg(ManifestCall(jsonFileName, validManifest))
+      probe.expectMsg(ManifestCall(jsonFileName))
       probe.expectMsg(JsonFileCall(zipFileName, jsonFileName, successful = true, dateIsSuspicious = false))
       probe.expectMsg(ZipFileCall(zipFileName, successful = true))
 
@@ -135,11 +135,11 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
       val processor = DqFileProcessorImpl(singleZipMockProvider(manifests), mockZipDao, mockJsonDao, mockManifestsDao)
       val result = Await.result(processor.process(zipFileName).runWith(Sink.seq), 1.second)
 
-      probe.expectMsg(ManifestCall("1.json", validManifest))
+      probe.expectMsg(ManifestCall("1.json"))
       probe.expectMsg(JsonFileCall(zipFileName, "1.json", successful = true, dateIsSuspicious = false))
-      probe.expectMsg(ManifestCall("2.json", validManifest))
+      probe.expectMsg(ManifestCall("2.json"))
       probe.expectMsg(JsonFileCall(zipFileName, "2.json", successful = true, dateIsSuspicious = false))
-      probe.expectMsg(ManifestCall("3.json", validManifest))
+      probe.expectMsg(ManifestCall("3.json"))
       probe.expectMsg(JsonFileCall(zipFileName, "3.json", successful = true, dateIsSuspicious = false))
       probe.expectMsg(ZipFileCall(zipFileName, successful = true))
 
@@ -155,10 +155,10 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
       val processor = DqFileProcessorImpl(singleZipMockProvider(manifests), mockZipDao, mockJsonDao, mockManifestsDao)
       val result = Await.result(processor.process(zipFileName).runWith(Sink.seq), 1.second)
 
-      probe.expectMsg(ManifestCall("1.json", validManifest))
+      probe.expectMsg(ManifestCall("1.json"))
       probe.expectMsg(JsonFileCall(zipFileName, "1.json", successful = true, dateIsSuspicious = false))
       probe.expectMsg(JsonFileCall(zipFileName, "2.json", successful = false, dateIsSuspicious = false))
-      probe.expectMsg(ManifestCall("3.json", validManifest))
+      probe.expectMsg(ManifestCall("3.json"))
       probe.expectMsg(JsonFileCall(zipFileName, "3.json", successful = true, dateIsSuspicious = false))
       probe.expectMsg(ZipFileCall(zipFileName, successful = true))
 
@@ -175,8 +175,8 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
       val processor1 = DqFileProcessorImpl(singleZipMockProvider(manifests1), zipDao, jsonDao, mockManifestsDao)
       val result1 = Await.result(processor1.process(zipFileName).runWith(Sink.seq), 1.second)
 
-      probe.expectMsg(ManifestCall("1.json", validManifest))
-      probe.expectMsg(ManifestCall("2.json", validManifest))
+      probe.expectMsg(ManifestCall("1.json"))
+      probe.expectMsg(ManifestCall("2.json"))
 
       result1 should ===(Seq(Option(2, 2)))
 
@@ -187,7 +187,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
       val processor2 = DqFileProcessorImpl(singleZipMockProvider(manifests2), zipDao, jsonDao, mockManifestsDao)
       val result2 = Await.result(processor2.process(zipFileName).runWith(Sink.seq), 1.second)
 
-      probe.expectMsg(ManifestCall("3.json", validManifest))
+      probe.expectMsg(ManifestCall("3.json"))
 
       result2 should ===(Seq(Option(1, 1)))
     }
@@ -215,7 +215,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
       probe.expectMsg(ZipFileCall("a", successful = false))
       probe.expectMsg(JsonFileCall("b", jsonFileName, successful = false, dateIsSuspicious = false))
       probe.expectMsg(ZipFileCall("b", successful = false))
-      probe.expectMsg(ManifestCall(jsonFileName, validManifest))
+      probe.expectMsg(ManifestCall(jsonFileName))
       probe.expectMsg(JsonFileCall("c", jsonFileName, successful = true, dateIsSuspicious = false))
       probe.expectMsg(ZipFileCall("c", successful = true))
 
@@ -247,9 +247,9 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
 
       dqApiFeed.processFilesAfter("1.zip").runWith(Sink.seq)
 
-      probe.expectMsg(ManifestCall("manifest1.json", validManifest))
+      probe.expectMsg(ManifestCall("manifest1.json"))
       probe.expectMsg(JsonFileCall("2.zip", "manifest1.json", successful = true, dateIsSuspicious = false))
-      probe.expectMsg(ManifestCall("manifest2.json", validManifest))
+      probe.expectMsg(ManifestCall("manifest2.json"))
       probe.expectMsg(JsonFileCall("2.zip", "manifest2.json", successful = true, dateIsSuspicious = false))
       probe.expectMsg(ZipFileCall("2.zip", successful = true))
     }
@@ -278,13 +278,13 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
     }
 
     def afterRecoveryExpectedMsg(probe: TestProbe): ZipFileCall = {
-      probe.expectMsg(ManifestCall("manifest2.json", validManifest))
+      probe.expectMsg(ManifestCall("manifest2.json"))
       probe.expectMsg(JsonFileCall("2.zip", "manifest2.json", successful = true, dateIsSuspicious = false))
       probe.expectMsg(ZipFileCall("2.zip", successful = true))
-      probe.expectMsg(ManifestCall("manifest3.json", validManifest))
+      probe.expectMsg(ManifestCall("manifest3.json"))
       probe.expectMsg(JsonFileCall("3.zip", "manifest3.json", successful = true, dateIsSuspicious = false))
       probe.expectMsg(ZipFileCall("3.zip", successful = true))
-      probe.expectMsg(ManifestCall("manifest4.json", validManifest))
+      probe.expectMsg(ManifestCall("manifest4.json"))
       probe.expectMsg(JsonFileCall("4.zip", "manifest4.json", successful = true, dateIsSuspicious = false))
       probe.expectMsg(ZipFileCall("4.zip", successful = true))
     }
@@ -293,7 +293,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
       val dqApiFeed = getDqApiFeedInstance(mockZipDao, mockJsonDao, mockManifestsDao)
 
       dqApiFeed.processFilesAfter("_").runWith(Sink.seq)
-      probe.expectMsg(ManifestCall("manifest1.json", validManifest))
+      probe.expectMsg(ManifestCall("manifest1.json"))
       probe.expectMsg(JsonFileCall("1.zip", "manifest1.json", successful = true, dateIsSuspicious = false))
       probe.expectMsg(ZipFileCall("1.zip", successful = true))
       afterRecoveryExpectedMsg(probe)
@@ -320,19 +320,20 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
     "process zip files and recover while exception in persistManifest" in {
       var isFirstCall: Boolean = true
       val mockManifestDaoWithExceptionOnFirstCall = new MockVoyageManifestPassengerInfoDao(probe.ref) {
-        override def persistManifest(jsonFileName: String, manifest: VoyageManifest, scheduledDate: SDate): Future[Option[Int]] =
+        override def insert(rows: Seq[VoyageManifestPassengerInfoRow]): Future[Int] =
           if (isFirstCall) {
             isFirstCall = false
             Future.failed(new Exception("db persistManifest exception"))
           } else {
-            probe ! ManifestCall(jsonFileName, manifest)
-            Future.successful(Option(1))
+            probe ! ManifestCall(rows.headOption.map(_.json_file).getOrElse(""))
+            Future.successful(1)
           }
       }
 
       val dqApiFeed = getDqApiFeedInstance(mockZipDao, mockJsonDao, mockManifestDaoWithExceptionOnFirstCall)
       dqApiFeed.processFilesAfter("_").runWith(Sink.seq)
 
+      probe.expectMsg(JsonFileCall("1.zip", "manifest1.json", successful = false, dateIsSuspicious = false))
       probe.expectMsg(ZipFileCall("1.zip", successful = false))
       afterRecoveryExpectedMsg(probe)
     }
@@ -353,7 +354,7 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
 
       getDqApiFeedInstance(mockZipDaoWithExceptionOnFirstCall, mockJsonDao, mockManifestsDao).processFilesAfter("_").runWith(Sink.seq)
 
-      probe.expectMsg(ManifestCall("manifest1.json", validManifest))
+      probe.expectMsg(ManifestCall("manifest1.json"))
       probe.expectMsg(JsonFileCall("1.zip", "manifest1.json", successful = true, dateIsSuspicious = false))
       afterRecoveryExpectedMsg(probe)
 
@@ -362,25 +363,20 @@ class DqFileProcessorTest extends TestKit(ActorSystem("MySpec"))
     "process zip files and recover while exception in persistJsonFile" in {
       var isFirstCall: Boolean = true
       val mockJsonDaoWithExceptionOnFirstCall = new MockJsonDao(probe.ref) {
-        override def persistJsonFile(zipFileName: String,
-                                     jsonFileName: String,
-                                     successful: Boolean,
-                                     dateIsSuspicious: Boolean,
-                                     maybeManifest: Option[VoyageManifest],
-                                     processedAt: Long,
-                                    ): Future[Unit] =
+        override def insert(row: ProcessedJsonRow): Future[Unit] =
           if (isFirstCall) {
             isFirstCall = false
             Future.failed(new Exception("db persistJsonFile exception"))
           } else {
-            probe ! JsonFileCall(zipFileName, jsonFileName, successful, dateIsSuspicious)
+            probe ! JsonFileCall(row.zip_file_name, row.json_file_name, row.success, row.suspicious_date)
             Future.successful()
           }
       }
 
       getDqApiFeedInstance(mockZipDao, mockJsonDaoWithExceptionOnFirstCall, mockManifestsDao).processFilesAfter("_").runWith(Sink.seq)
 
-      probe.expectMsg(ManifestCall("manifest1.json", validManifest))
+      probe.expectMsg(ManifestCall("manifest1.json"))
+      probe.expectMsg(JsonFileCall("1.zip", "manifest1.json", successful = false, dateIsSuspicious = false))
       probe.expectMsg(ZipFileCall("1.zip", successful = false))
       afterRecoveryExpectedMsg(probe)
     }
