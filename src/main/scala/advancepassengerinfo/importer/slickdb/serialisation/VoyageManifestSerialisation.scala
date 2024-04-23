@@ -1,29 +1,19 @@
-package advancepassengerinfo.importer.slickdb
+package advancepassengerinfo.importer.slickdb.serialisation
 
+import advancepassengerinfo.importer.slickdb.tables.VoyageManifestPassengerInfoRow
 import advancepassengerinfo.manifests.{PassengerInfo, VoyageManifest}
 
 import java.sql.Timestamp
-import scala.concurrent.ExecutionContext
 import scala.util.Try
 
-
-case class VoyageManifestPassengerInfoTable(tables: Tables) {
-  import tables.profile.api._
-  import tables.{VoyageManifestPassengerInfo, VoyageManifestPassengerInfoRow}
-
-  def rowsToInsert(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, jsonFile: String)
-                  (implicit ec: ExecutionContext): (Int, DBIOAction[Unit, NoStream, Effect.Write]) = {
-    val rows = voyageManifestRows(vm, dayOfWeek, weekOfYear, jsonFile)
-    (rows.size, DBIO.seq(VoyageManifestPassengerInfo ++= rows))
-  }
-
+object VoyageManifestSerialisation {
   def voyageManifestRows(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, jsonFile: String): List[VoyageManifestPassengerInfoRow] = {
     val schTs = new Timestamp(vm.scheduleArrivalDateTime.map(_.millisSinceEpoch).getOrElse(0L))
 
     vm.bestPassengers.map { passenger => passengerRow(vm, dayOfWeek, weekOfYear, schTs, passenger, jsonFile) }
   }
 
-  def passengerRow(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, schTs: Timestamp, p: PassengerInfo, jsonFile: String): tables.VoyageManifestPassengerInfoRow = {
+  def passengerRow(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, schTs: Timestamp, p: PassengerInfo, jsonFile: String): VoyageManifestPassengerInfoRow = {
     VoyageManifestPassengerInfoRow(
       event_code = vm.EventCode,
       arrival_port_code = vm.ArrivalPortCode,
@@ -50,6 +40,4 @@ case class VoyageManifestPassengerInfoTable(tables: Tables) {
     )
   }
 
-  def dayOfWeekAndWeekOfYear(date: Timestamp)(implicit ec: ExecutionContext): DBIOAction[Option[(Int, Int)], NoStream, Effect] =
-    sql"""SELECT EXTRACT(DOW FROM TIMESTAMP'#$date'), EXTRACT(WEEK FROM TIMESTAMP'#$date')""".as[(Int, Int)].map(_.headOption)
 }

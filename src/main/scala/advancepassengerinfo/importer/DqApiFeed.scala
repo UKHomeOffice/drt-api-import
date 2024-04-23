@@ -6,6 +6,7 @@ import advancepassengerinfo.importer.provider.FileNames
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.typesafe.scalalogging.Logger
+import drtlib.SDate
 import metrics.MetricsCollectorLike
 
 import java.time.Instant
@@ -29,7 +30,7 @@ case class DqApiFeedImpl(fileNamesProvider: FileNames,
       .unfoldAsync((lastFileName, List[String]())) { case (lastFileName, lastFiles) =>
         markerAndNextFileNames(lastFileName).map {
           case (nextFetch, newFiles) =>
-            lastCheckedState.setLastCheckedAt(Instant.now())
+            lastCheckedState.setLastCheckedAt(SDate.now())
             Option((nextFetch, newFiles), (lastFileName, lastFiles))
         }.recover {
           case t =>

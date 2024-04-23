@@ -15,7 +15,7 @@ object ManifestGenerator {
     PassengerIdentifier = Option("123")
   )
 
-  def manifest(): VoyageManifest = VoyageManifest(
-    "DC", "LHR", "JFK", "1000", "BA", "2022-06-01", "10:00", List(passengerInfo())
+  def manifest(date: String, time: String): VoyageManifest = VoyageManifest(
+    "DC", "LHR", "JFK", "1000", "BA", date, time, List(passengerInfo())
   )
 }
