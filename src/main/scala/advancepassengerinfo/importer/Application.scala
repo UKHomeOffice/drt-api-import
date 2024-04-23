@@ -98,7 +98,7 @@ object Application extends App {
   actorSystem.scheduler.scheduleAtFixedRate(0.seconds, 1.minute) { () =>
     jsonDao.earliestUnpopulatedDate.map {
       _.map { date =>
-        log.info(s"Earliest unpopulated date: $date")
+        log.info(s"Populating earliest unpopulated date: $date")
         jsonDao.populateManifestColumnsForDate(date)
       }
     }
