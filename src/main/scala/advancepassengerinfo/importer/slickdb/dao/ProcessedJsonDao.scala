@@ -3,9 +3,7 @@ package advancepassengerinfo.importer.slickdb.dao
 import advancepassengerinfo.importer.Db
 import advancepassengerinfo.importer.slickdb.DatabaseImpl.profile.api._
 import advancepassengerinfo.importer.slickdb.tables.{ProcessedJsonRow, ProcessedJsonTable, ProcessedZipTable}
-import drtlib.SDate
 
-import java.sql.Timestamp
 import scala.concurrent.{ExecutionContext, Future}
 
 

@@ -3,7 +3,6 @@ package advancepassengerinfo.importer.slickdb.tables
 import advancepassengerinfo.manifests.VoyageManifest
 
 import java.sql.Timestamp
-import scala.concurrent.Future
 import scala.util.Try
 
 case class ProcessedJsonRow(zip_file_name: String,
