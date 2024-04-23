@@ -59,6 +59,7 @@ case class ProcessedJsonDaoImpl(db: Db)
               from voyage_manifest_passenger_info vm
               where vm.json_file = pj.json_file_name
               group by arrival_port_code, departure_port_code, voyage_number, carrier_code, scheduled_date, event_code
+              limit 1
             )
           from processed_zip pz
           where pj.zip_file_name = pz.zip_file_name and pz.created_on = $date;

@@ -93,6 +93,38 @@ class ProcessedJsonDaoImplTest extends AnyWordSpec with Matchers with BeforeAndA
     }
   }
 
+  "updateManifestColumnsForDate" should {
+    "update the manifest columns for a date when a json file appears in more than one zip" in {
+      val zipRow1 = ProcessedZipRow("test1.zip", success = true, new Timestamp(0), Option("2021-01-01"))
+      val zipRow2 = ProcessedZipRow("test2.zip", success = true, new Timestamp(0), Option("2021-01-01"))
+      val jsonRow1 = ProcessedJsonGenerator.unpopulated("test1.zip", "test.json")
+      val jsonRow2 = ProcessedJsonGenerator.unpopulated("test2.zip", "test.json")
+      val manifest = ManifestGenerator.manifest("2021-01-01", "01:30")
+      val result = zipDao.insert(zipRow1)
+        .flatMap(_ => zipDao.insert(zipRow2))
+        .flatMap(_ => dao.insert(jsonRow1))
+        .flatMap(_ => dao.insert(jsonRow2))
+        .flatMap(_ => manifestDao.insert(voyageManifestRows(manifest, 1, 2, "test.json")))
+        .flatMap(_ => dao.populateManifestColumnsForDate("2021-01-01"))
+        .flatMap(_ => InMemoryDatabase.run(table.result.head))
+
+      val updatedJsonRow = Await.result(result, 1.second)
+
+      updatedJsonRow shouldBe jsonRow1.copy(
+        arrival_port_code = Option(manifest.ArrivalPortCode),
+        departure_port_code = Option(manifest.DeparturePortCode),
+        voyage_number = Option(manifest.VoyageNumber.toInt),
+        carrier_code = Option(manifest.CarrierCode),
+        scheduled = manifest.scheduleArrivalDateTime.map(s => new Timestamp(s.millisSinceEpoch)),
+        event_code = Option(manifest.EventCode),
+        non_interactive_total_count = Option(0),
+        non_interactive_trans_count = Option(0),
+        interactive_total_count = Option(1),
+        interactive_trans_count = Option(0),
+      )
+    }
+  }
+
   "delete" should {
     "delete a row from the table" in {
       val row1 = ProcessedJsonGenerator.populated("test1.zip", "testa.json")
