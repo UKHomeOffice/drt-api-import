@@ -14,7 +14,7 @@ trait ProcessedJsonDao {
 
   def earliestUnpopulatedDate: Future[Option[String]]
 
-  def updateManifestColumnsForDate(date: String): Future[Int]
+  def populateManifestColumnsForDate(date: String): Future[Int]
 
   def delete(jsonFileName: String): Future[Int]
 }
@@ -35,7 +35,8 @@ case class ProcessedJsonDaoImpl(db: Db)
     val query = table join zipTable on {
       case (json, zip) => json.zip_file_name === zip.zip_file_name
     } filter {
-      case (json, _) => json.voyage_number.isEmpty
+      case (json, zip) =>
+        json.voyage_number.isEmpty && json.success && zip.success
     } sortBy {
       case (_, zip) => zip.created_on.asc
     } map {
@@ -45,7 +46,7 @@ case class ProcessedJsonDaoImpl(db: Db)
     db.run(query.result).map(_.headOption.flatten)
   }
 
-  def updateManifestColumnsForDate(date: String): Future[Int] = {
+  def populateManifestColumnsForDate(date: String): Future[Int] = {
     val query = sql"""UPDATE processed_json pj
           set (arrival_port_code, departure_port_code, voyage_number, carrier_code, scheduled, event_code,
             non_interactive_total_count, non_interactive_trans_count, interactive_total_count, interactive_trans_count) = (

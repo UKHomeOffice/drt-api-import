@@ -26,6 +26,11 @@ case class SDate(dateTime: DateTime) {
 
   def millisSinceEpoch: Long = dateTime.getMillis
 
+  def <(other: SDate): Boolean = dateTime.isBefore(other.dateTime)
+
+  val toYyyyMMdd: String = f"${fullYear - 2000}$month%02d$date%02d"
+
+  val toIsoDate: String = f"$fullYear%04d-$month%02d-$date%02d"
 }
 
 
@@ -33,12 +38,8 @@ object SDate {
   val log: Logger = LoggerFactory.getLogger(getClass)
 
   object implicits {
-
     implicit def jodaToSDate(dateTime: DateTime): SDate = SDate(dateTime)
-
   }
-
-  val yyyyMMdd: SDate => String = date => f"${date.fullYear - 2000}${date.month}%02d${date.date}%02d"
 
   def apply(dateTime: String): SDate = SDate(new DateTime(dateTime, DateTimeZone.UTC))
 

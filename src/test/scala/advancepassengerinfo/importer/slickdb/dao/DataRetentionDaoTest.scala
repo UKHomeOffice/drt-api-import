@@ -5,8 +5,9 @@ import advancepassengerinfo.importer.InMemoryDatabase
 import advancepassengerinfo.importer.slickdb.DatabaseImpl.profile.api._
 import advancepassengerinfo.importer.slickdb.ProcessedJsonGenerator
 import advancepassengerinfo.importer.slickdb.serialisation.VoyageManifestSerialisation.voyageManifestRows
-import advancepassengerinfo.importer.slickdb.tables.{ProcessedJsonRow, ProcessedJsonTable, ProcessedZipRow, ProcessedZipTable, VoyageManifestPassengerInfoRow, VoyageManifestPassengerInfoTable}
+import advancepassengerinfo.importer.slickdb.tables._
 import advancepassengerinfo.manifests.VoyageManifest
+import drtlib.SDate
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -51,9 +52,9 @@ class DataRetentionDaoTest extends AnyWordSpec with Matchers with BeforeAndAfter
       .flatMap(_ => manifestDao.insert(manifests0101))
       .flatMap(_ => manifestDao.insert(manifests0102))
       .flatMap(_ => manifestDao.insert(manifests0103))
-      .flatMap(_ => jsonDao.updateManifestColumnsForDate("2021-01-01"))
-      .flatMap(_ => jsonDao.updateManifestColumnsForDate("2021-01-02"))
-      .flatMap(_ => jsonDao.updateManifestColumnsForDate("2021-01-03"))
+      .flatMap(_ => jsonDao.populateManifestColumnsForDate("2021-01-01"))
+      .flatMap(_ => jsonDao.populateManifestColumnsForDate("2021-01-02"))
+      .flatMap(_ => jsonDao.populateManifestColumnsForDate("2021-01-03"))
 
     Await.result(inserts, 1.second)
   }
@@ -66,7 +67,7 @@ class DataRetentionDaoTest extends AnyWordSpec with Matchers with BeforeAndAfter
       jsons1 should have size 3
       manifests1 should have size 3
 
-      val dateToDelete = "2021-01-02"
+      val dateToDelete = SDate("2021-01-02")
       Await.ready(retentionDao.deleteForDate(dateToDelete), 1.second)
 
       val (zips2, jsons2, manifests2) = zipsJsonsAndManifests

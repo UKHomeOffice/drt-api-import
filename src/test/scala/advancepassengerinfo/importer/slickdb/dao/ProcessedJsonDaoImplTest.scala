@@ -73,7 +73,7 @@ class ProcessedJsonDaoImplTest extends AnyWordSpec with Matchers with BeforeAndA
       val result = zipDao.insert(zipRow)
         .flatMap(_ => dao.insert(jsonRow))
         .flatMap(_ => manifestDao.insert(voyageManifestRows(manifest, 1, 2, "test.json")))
-        .flatMap(_ => dao.updateManifestColumnsForDate("2021-01-01"))
+        .flatMap(_ => dao.populateManifestColumnsForDate("2021-01-01"))
         .flatMap(_ => InMemoryDatabase.run(table.result.head))
 
       val updatedJsonRow = Await.result(result, 1.second)
