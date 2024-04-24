@@ -37,7 +37,7 @@ case class MockJsonDao(probe: ActorRef) extends ProcessedJsonDao {
   }
   override def jsonHasBeenProcessed(zipFileName: String, jsonFileName: String): Future[Boolean] = Future.successful(false)
 
-  override def earliestUnpopulatedDate: Future[Option[String]] = Future.successful(Option("2021-01-01"))
+  override def earliestUnpopulatedDate(since: Long): Future[Option[String]] = Future.successful(Option("2021-01-01"))
 
   override def populateManifestColumnsForDate(date: String): Future[Int] = Future.successful(1)
 

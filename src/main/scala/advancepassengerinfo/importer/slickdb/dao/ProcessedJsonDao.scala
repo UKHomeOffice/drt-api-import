@@ -3,6 +3,7 @@ package advancepassengerinfo.importer.slickdb.dao
 import advancepassengerinfo.importer.Db
 import advancepassengerinfo.importer.slickdb.DatabaseImpl.profile.api._
 import advancepassengerinfo.importer.slickdb.tables.{ProcessedJsonRow, ProcessedJsonTable, ProcessedZipTable}
+import drtlib.SDate
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -12,7 +13,7 @@ trait ProcessedJsonDao {
 
   def jsonHasBeenProcessed(zipFileName: String, jsonFileName: String): Future[Boolean]
 
-  def earliestUnpopulatedDate: Future[Option[String]]
+  def earliestUnpopulatedDate(since: Long): Future[Option[String]]
 
   def populateManifestColumnsForDate(date: String): Future[Int]
 
@@ -31,12 +32,12 @@ case class ProcessedJsonDaoImpl(db: Db)
     db.run(query.exists.result)
   }
 
-  def earliestUnpopulatedDate: Future[Option[String]] = {
+  def earliestUnpopulatedDate(since: Long): Future[Option[String]] = {
     val query = table join zipTable on {
       case (json, zip) => json.zip_file_name === zip.zip_file_name
     } filter {
       case (json, zip) =>
-        json.voyage_number.isEmpty && json.success && zip.success
+        json.voyage_number.isEmpty && json.success && zip.success && zip.created_on >= SDate(since).toIsoDate
     } sortBy {
       case (_, zip) => zip.created_on.asc
     } map {

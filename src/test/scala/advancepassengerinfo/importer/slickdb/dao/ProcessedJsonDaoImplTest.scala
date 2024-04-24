@@ -51,7 +51,7 @@ class ProcessedJsonDaoImplTest extends AnyWordSpec with Matchers with BeforeAndA
   }
 
   "earliestUnpopulatedDate" should {
-    "return the earliest unpopulated date" in {
+    "return the earliest unpopulated date since 2021-01-01" in {
       val zipRow1 = ProcessedZipRow("test1.zip", success = true, new Timestamp(0), Option("2021-01-01"))
       val zipRow2 = ProcessedZipRow("test2.zip", success = true, new Timestamp(0), Option("2021-01-02"))
       val row1 = ProcessedJsonGenerator.unpopulated("test1.zip", "testa.json")
@@ -60,8 +60,16 @@ class ProcessedJsonDaoImplTest extends AnyWordSpec with Matchers with BeforeAndA
         .flatMap(_ => zipDao.insert(zipRow2))
         .flatMap(_ => dao.insert(row1))
         .flatMap(_ => dao.insert(row2))
-        .flatMap(_ => dao.earliestUnpopulatedDate)
+        .flatMap(_ => dao.earliestUnpopulatedDate(SDate("2021-01-01").millisSinceEpoch))
       Await.result(result, 1.second) shouldBe Some("2021-01-01")
+    }
+    "return None if there are no unpopulated dates since 2021-01-01" in {
+      val zipRow = ProcessedZipRow("test.zip", success = true, new Timestamp(0), Option("2021-01-01"))
+      val row = ProcessedJsonGenerator.unpopulated("test.zip", "test.json")
+      val result = zipDao.insert(zipRow)
+        .flatMap(_ => dao.insert(row))
+        .flatMap(_ => dao.earliestUnpopulatedDate(SDate("2021-01-02").millisSinceEpoch))
+      Await.result(result, 1.second) shouldBe None
     }
   }
 
