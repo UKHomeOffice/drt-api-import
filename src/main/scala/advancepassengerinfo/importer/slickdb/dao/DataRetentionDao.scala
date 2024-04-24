@@ -30,11 +30,9 @@ case class DataRetentionDao(db: Db)
         val deleteManifests = manifestTable.filter(_.json_file.inSet(jsonFileNames)).delete
         val deleteJsons = jsonTable.filter(_.json_file_name.inSet(jsonFileNames)).delete
         val deleteZips = zipTable.filter(_.created_on === isoDate).delete
-        for {
-          deletedManifests <- db.run(deleteManifests)
-          deletedJsons <- db.run(deleteJsons)
-          deletedZips <- db.run(deleteZips)
-        } yield (deletedZips, deletedJsons, deletedManifests)
+
+        db.run(DBIO.sequence(Seq(deleteManifests, deleteJsons, deleteZips)).transactionally)
+          .map(counts => (counts.head, counts(1), counts(2)))
       }
   }
 }
