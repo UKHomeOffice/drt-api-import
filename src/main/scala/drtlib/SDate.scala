@@ -43,5 +43,7 @@ object SDate {
 
   def apply(dateTime: String): SDate = SDate(new DateTime(dateTime, DateTimeZone.UTC))
 
+  def apply(timestamp: Long): SDate = SDate(new DateTime(timestamp, DateTimeZone.UTC))
+
   def now(): SDate = SDate(new DateTime(DateTimeZone.UTC))
 }

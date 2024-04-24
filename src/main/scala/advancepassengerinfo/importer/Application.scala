@@ -96,7 +96,8 @@ object Application extends App {
 
   actorSystem.scheduler.scheduleAtFixedRate(0.seconds, 1.minute)(() => deleteOldData())
   actorSystem.scheduler.scheduleAtFixedRate(0.seconds, 1.minute) { () =>
-    jsonDao.earliestUnpopulatedDate.map {
+    val retentionStartDate = SDate.now().minus((retainDataForYears * 365).days).millisSinceEpoch
+    jsonDao.earliestUnpopulatedDate(retentionStartDate).map {
       _.map { date =>
         log.info(s"Populating earliest unpopulated date: $date")
         jsonDao.populateManifestColumnsForDate(date)
