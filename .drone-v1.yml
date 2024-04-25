@@ -19,8 +19,6 @@ steps:
         from_secret: ARTIFACTORY_PASSWORD
       ARTIFACTORY_USERNAME: drt_ci
     when:
-      branch:
-        - ${DRONE_BRANCH}
       event:
         - push
 
@@ -70,8 +68,6 @@ steps:
     environment:
       DRONE_BUILD_NUMBER: ${DRONE_BUILD_NUMBER}
     when:
-      branch:
-        - ${DRONE_BRANCH}
       event:
         - push
     depends_on:
