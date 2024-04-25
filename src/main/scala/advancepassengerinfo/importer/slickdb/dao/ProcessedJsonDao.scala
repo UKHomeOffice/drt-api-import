@@ -52,14 +52,15 @@ case class ProcessedJsonDaoImpl(db: Db)
           set (arrival_port_code, departure_port_code, voyage_number, carrier_code, scheduled, event_code,
             non_interactive_total_count, non_interactive_trans_count, interactive_total_count, interactive_trans_count) = (
               select
-                arrival_port_code, departure_port_code, voyage_number, carrier_code, scheduled_date, event_code,
+                vm.arrival_port_code, vm.departure_port_code, vm.voyage_number, vm.carrier_code, vm.scheduled_date, vm.event_code,
                 count(*) filter (where passenger_identifier = '') as non_interactive_total_count,
                 count(*) filter (where passenger_identifier = '' and in_transit=true) as non_interactive_trans_count,
                 count(*) filter (where passenger_identifier != '') as interactive_total_count,
                 count(*) filter (where passenger_identifier != '' and in_transit=true) as interactive_trans_count
-              from voyage_manifest_passenger_info vm
-              where vm.json_file = pj.json_file_name
-              group by arrival_port_code, departure_port_code, voyage_number, carrier_code, scheduled_date, event_code
+              from processed_json pj2
+              left join voyage_manifest_passenger_info vm on pj2.json_file_name = vm.json_file
+              where pj2.json_file_name = pj.json_file_name and pj2.zip_file_name = pj.zip_file_name
+              group by vm.arrival_port_code, vm.departure_port_code, vm.voyage_number, vm.carrier_code, vm.scheduled_date, vm.event_code
               limit 1
             )
           from processed_zip pz

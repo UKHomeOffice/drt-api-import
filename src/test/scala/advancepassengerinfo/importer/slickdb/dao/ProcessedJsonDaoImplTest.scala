@@ -116,9 +116,31 @@ class ProcessedJsonDaoImplTest extends AnyWordSpec with Matchers with BeforeAndA
         interactive_trans_count = Option(0),
       )
     }
-  }
 
-  "updateManifestColumnsForDate" should {
+    "update the manifest columns when there are no manifest rows for the json file" in {
+      val zipRow = ProcessedZipRow("test.zip", success = true, new Timestamp(0), Option("2021-01-01"))
+      val jsonRow = ProcessedJsonGenerator.unpopulated("test.zip", "test.json")
+      val result = zipDao.insert(zipRow)
+        .flatMap(_ => dao.insert(jsonRow))
+        .flatMap(_ => dao.populateManifestColumnsForDate("2021-01-01"))
+        .flatMap(_ => InMemoryDatabase.run(table.result.head))
+
+      val updatedJsonRow = Await.result(result, 1.second)
+
+      updatedJsonRow shouldBe jsonRow.copy(
+        arrival_port_code = None,
+        departure_port_code = None,
+        voyage_number = None,
+        carrier_code = None,
+        scheduled = None,
+        event_code = None,
+        non_interactive_total_count = Option(0),
+        non_interactive_trans_count = Option(0),
+        interactive_total_count = Option(0),
+        interactive_trans_count = Option(0),
+      )
+    }
+
     "update the manifest columns for a date when a json file appears in more than one zip" in {
       val zipRow1 = ProcessedZipRow("test1.zip", success = true, new Timestamp(0), Option("2021-01-01"))
       val zipRow2 = ProcessedZipRow("test2.zip", success = true, new Timestamp(0), Option("2021-01-01"))
