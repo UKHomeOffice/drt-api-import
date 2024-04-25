@@ -131,6 +131,30 @@ class ProcessedJsonDaoImplTest extends AnyWordSpec with Matchers with BeforeAndA
         interactive_trans_count = Option(0),
       )
     }
+
+    "set the voyage_number to -1 where there were no matching voyage manifest rows" in{
+      val zipRow = ProcessedZipRow("test.zip", success = true, new Timestamp(0), Option("2021-01-01"))
+      val jsonRow = ProcessedJsonGenerator.unpopulated("test.zip", "test.json")
+      val result = zipDao.insert(zipRow)
+        .flatMap(_ => dao.insert(jsonRow))
+        .flatMap(_ => dao.populateManifestColumnsForDate("2021-01-01"))
+        .flatMap(_ => InMemoryDatabase.run(table.result.head))
+
+      val updatedJsonRow = Await.result(result, 1.second)
+
+      updatedJsonRow shouldBe jsonRow.copy(
+        arrival_port_code = None,
+        departure_port_code = None,
+        voyage_number = Option(-1),
+        carrier_code = None,
+        scheduled = None,
+        event_code = None,
+        non_interactive_total_count = Option(0),
+        non_interactive_trans_count = Option(0),
+        interactive_total_count = Option(0),
+        interactive_trans_count = Option(0),
+      )
+    }
   }
 
   "delete" should {

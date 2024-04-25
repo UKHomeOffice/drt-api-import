@@ -52,14 +52,15 @@ case class ProcessedJsonDaoImpl(db: Db)
           set (arrival_port_code, departure_port_code, voyage_number, carrier_code, scheduled, event_code,
             non_interactive_total_count, non_interactive_trans_count, interactive_total_count, interactive_trans_count) = (
               select
-                arrival_port_code, departure_port_code, voyage_number, carrier_code, scheduled_date, event_code,
+                vm.arrival_port_code, vm.departure_port_code, COALESCE(vm.voyage_number, -1) as voyage_number, vm.carrier_code, vm.scheduled_date, vm.event_code,
                 count(*) filter (where passenger_identifier = '') as non_interactive_total_count,
                 count(*) filter (where passenger_identifier = '' and in_transit=true) as non_interactive_trans_count,
                 count(*) filter (where passenger_identifier != '') as interactive_total_count,
                 count(*) filter (where passenger_identifier != '' and in_transit=true) as interactive_trans_count
-              from voyage_manifest_passenger_info vm
-              where vm.json_file = pj.json_file_name
-              group by arrival_port_code, departure_port_code, voyage_number, carrier_code, scheduled_date, event_code
+              from processed_json pj_
+              left join voyage_manifest_passenger_info vm on pj_.json_file_name = vm.json_file
+              where pj_.json_file_name=pj.json_file_name and pj_.zip_file_name=pz.zip_file_name
+              group by vm.arrival_port_code, vm.departure_port_code, vm.voyage_number, vm.carrier_code, vm.scheduled_date, vm.event_code
               limit 1
             )
           from processed_zip pz
@@ -74,3 +75,20 @@ case class ProcessedJsonDaoImpl(db: Db)
     db.run(query)
   }
 }
+
+/**
+ select
+ vm.arrival_port_code, vm.departure_port_code, COALESCE(vm.voyage_number, -1) as voyage_number, vm.carrier_code, vm.scheduled_date, vm.event_code,
+ count(*) filter (where passenger_identifier = '') as non_interactive_total_count,
+                count(*) filter (where passenger_identifier = '' and in_transit=true) as non_interactive_trans_count,
+ count(*) filter (where passenger_identifier != '') as interactive_total_count,
+                count(*) filter (where passenger_identifier != '' and in_transit=true) as interactive_trans_count
+ from processed_json pj
+ left join voyage_manifest_passenger_info vm on pj.json_file_name = vm.json_file
+ where pj.json_file_name = 'drt_190429_055500_SK0803_CI_7615.json'
+ group by vm.arrival_port_code, vm.departure_port_code, vm.voyage_number, vm.carrier_code, vm.scheduled_date, vm.event_code
+ limit 1;
+
+ ProcessedJsonRow("test1.zip", "test.json", false, true, 1970-01-01 01:00:00.0, Some("LHR"), Some("JFK"), Some(1000), Some("BA"), Some(2021-01-01 01:30:00.0), Some("DC"), Some(0), Some(0), Some(2), Some(0))
+ ProcessedJsonRow("test1.zip", "test.json", false, true, 1970-01-01 01:00:00.0, Some("LHR"), Some("JFK"), Some(1000), Some("BA"), Some(2021-01-01 01:30:00.0), Some("DC"), Some(0), Some(0), Some(1), Some(0))
+ */
