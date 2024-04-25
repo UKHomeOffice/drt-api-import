@@ -37,3 +37,4 @@ case class ProcessedZipDaoImpl(db: Db) extends ProcessedZipDao {
     db.run(query.result)
   }
 }
+
