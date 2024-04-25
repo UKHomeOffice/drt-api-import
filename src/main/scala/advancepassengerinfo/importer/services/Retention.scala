@@ -26,7 +26,7 @@ object Retention {
           val start = System.currentTimeMillis()
           val eventualTuple = deleteForDate(date)
           eventualTuple.onComplete {
-            case Success((deletedZips, deletedJsons, deletedManifests)) =>
+            case Success((deletedManifests, deletedJsons, deletedZips)) =>
               log.info(s"Deleted $deletedZips zips, $deletedJsons jsons, $deletedManifests manifests. Took ${System.currentTimeMillis() - start}ms")
             case Failure(exception) =>
               log.error(s"Failed to delete data: ${exception.getMessage}")
