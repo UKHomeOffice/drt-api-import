@@ -37,7 +37,7 @@ case class ProcessedJsonDaoImpl(db: Db)
       case (json, zip) => json.zip_file_name === zip.zip_file_name
     } filter {
       case (json, zip) =>
-        json.voyage_number.isEmpty && json.success && zip.success && zip.created_on >= SDate(since).toIsoDate
+        json.non_interactive_total_count.isEmpty && json.success && zip.success && zip.created_on >= SDate(since).toIsoDate
     } sortBy {
       case (_, zip) => zip.created_on.asc
     } map {
