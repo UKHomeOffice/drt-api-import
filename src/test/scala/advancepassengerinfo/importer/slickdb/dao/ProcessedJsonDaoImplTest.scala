@@ -13,11 +13,11 @@ import org.scalatest.wordspec.AnyWordSpec
 import slick.lifted.TableQuery
 
 import java.sql.Timestamp
-import scala.concurrent.Await
+import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration.DurationInt
 
 class ProcessedJsonDaoImplTest extends AnyWordSpec with Matchers with BeforeAndAfter {
-  implicit val ec = scala.concurrent.ExecutionContext.Implicits.global
+  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   private val dao = ProcessedJsonDaoImpl(InMemoryDatabase)
   private val zipDao = ProcessedZipDaoImpl(InMemoryDatabase)
@@ -69,6 +69,23 @@ class ProcessedJsonDaoImplTest extends AnyWordSpec with Matchers with BeforeAndA
       val result = zipDao.insert(zipRow)
         .flatMap(_ => dao.insert(row))
         .flatMap(_ => dao.earliestUnpopulatedDate(SDate("2021-01-02").millisSinceEpoch))
+      Await.result(result, 1.second) shouldBe None
+    }
+    "return None if there are no unpopulated dates since 2021-01-01, even if a json row contains no flight identifiers due to there being no manifest entries" in {
+      val zipRow = ProcessedZipRow("test.zip", success = true, new Timestamp(0), Option("2021-01-01"))
+      val row = ProcessedJsonGenerator
+        .populated("test.zip", "test.json")
+        .copy(
+          arrival_port_code = None,
+          departure_port_code = None,
+          voyage_number = None,
+          carrier_code = None,
+          scheduled = None,
+          event_code = None,
+        )
+      val result = zipDao.insert(zipRow)
+        .flatMap(_ => dao.insert(row))
+        .flatMap(_ => dao.earliestUnpopulatedDate(SDate("2021-01-01").millisSinceEpoch))
       Await.result(result, 1.second) shouldBe None
     }
   }
