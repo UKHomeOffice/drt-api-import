@@ -92,7 +92,8 @@ object Application extends App {
       .flatMap(d => Try(SDate(d)).toOption)
       .filter(isBeyondRetentionPeriod)
   }
-  val deleteOldData = Retention.deleteOldData(oldestData, retentionDao.deleteForDate)
+  val maxJsonDeletionBatchSize = config.getInt("app.max-json-deletion-batch-size")
+  val deleteOldData = Retention.deleteOldData(oldestData, (date: SDate) => retentionDao.deleteForDate(date, maxJsonDeletionBatchSize))
 
   if (config.getBoolean("app.purge-old-data"))
     actorSystem.scheduler.scheduleAtFixedRate(0.seconds, 1.minute)(() => deleteOldData())
