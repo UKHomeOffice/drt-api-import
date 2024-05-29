@@ -109,6 +109,10 @@ object Application extends App {
       }
     }
 
+  sys.addShutdownHook {
+    PostgresDb.close()
+  }
+
   Await.ready(eventual, Duration.Inf)
 }
 
@@ -117,6 +121,9 @@ trait Db {
   protected val con: profile.backend.Database
 
   def run[T]: DBIOAction[T, NoStream, Nothing] => Future[T] = con.run
+
+  def close()(implicit ec: ExecutionContext): Future[Unit] = Future(con.close())
+
 }
 
 object PostgresDb extends Db {
