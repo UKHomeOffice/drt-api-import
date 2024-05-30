@@ -41,7 +41,7 @@ case class DataRetentionDao(db: Db)
           db.run(DBIO.sequence(Seq(deleteManifests, deleteJsons, deleteZips)).transactionally)
             .map(counts => (counts.head, counts(1), counts(2)))
         } else {
-          log.info(s"Deleting $maxBatchSize (out of ${jsonFileNames.size}) jsons and manifests for $isoDate")
+          log.info(s"Deleting $maxBatchSize jsons and manifests for $isoDate")
           db.run(DBIO.sequence(Seq(deleteManifests, deleteJsons)).transactionally)
             .map(counts => (counts.head, counts(1), 0))
         }
