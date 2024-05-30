@@ -3,7 +3,7 @@ package advancepassengerinfo.importer.slickdb.tables
 import advancepassengerinfo.importer.slickdb.DatabaseImpl.profile.api._
 import slick.lifted.{Rep, Tag}
 
-import java.sql.{Date, Timestamp}
+import java.sql.Timestamp
 
 class ProcessedZipTable(tag: Tag) extends Table[ProcessedZipRow](tag, Option("public"), "processed_zip") {
   val zip_file_name: Rep[String] = column[String]("zip_file_name")
