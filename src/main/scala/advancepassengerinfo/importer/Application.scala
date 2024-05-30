@@ -96,19 +96,8 @@ object Application extends App {
   val deleteOldData = Retention.deleteOldData(oldestData, (date: SDate) => retentionDao.deleteForDate(date, maxJsonDeletionBatchSize))
 
   if (config.getBoolean("app.purge-old-data"))
-    actorSystem.scheduler.scheduleAtFixedRate(0.seconds, 1.minute)(() => deleteOldData())
-
-  if (config.getBoolean("app.populate-manifest-columns"))
-    actorSystem.scheduler.scheduleAtFixedRate(0.seconds, 1.minute) { () =>
-      val retentionStartDate = SDate.now().minus((retainDataForYears * 365).days).millisSinceEpoch
-      jsonDao.earliestUnpopulatedDate(retentionStartDate).map {
-        _.map { date =>
-          log.info(s"Populating earliest unpopulated date: $date")
-          jsonDao.populateManifestColumnsForDate(date)
-        }
-      }
-    }
-
+    actorSystem.scheduler.scheduleAtFixedRate(0.seconds, 1.minute)(() => Await.ready(deleteOldData(), 60.minutes))
+  
   sys.addShutdownHook {
     PostgresDb.close()
   }
