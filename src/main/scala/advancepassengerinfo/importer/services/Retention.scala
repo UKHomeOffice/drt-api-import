@@ -1,5 +1,6 @@
 package advancepassengerinfo.importer.services
 
+import akka.actor.ActorSystem
 import drtlib.SDate
 import org.slf4j.LoggerFactory
 
@@ -16,7 +17,7 @@ object Retention {
   def deleteOldData(maybeDeletableDate: () => Future[Option[SDate]],
                     deleteForDate: SDate => Future[(Int, Int, Int)],
                    )
-                   (implicit ec: ExecutionContext): () => Future[(Int, Int, Int)] = {
+                   (implicit system: ActorSystem, exc: ExecutionContext): () => Future[(Int, Int, Int)] = {
     val log = LoggerFactory.getLogger(getClass)
 
     () =>
@@ -28,8 +29,10 @@ object Retention {
           eventualTuple.onComplete {
             case Success((deletedManifests, deletedJsons, deletedZips)) =>
               log.info(s"Deleted $deletedZips zips, $deletedJsons jsons, $deletedManifests manifests. Took ${System.currentTimeMillis() - start}ms")
+              system.scheduler.scheduleOnce(1.minute)(deleteOldData(maybeDeletableDate, deleteForDate))
             case Failure(exception) =>
               log.error(s"Failed to delete data: ${exception.getMessage}")
+              system.scheduler.scheduleOnce(30.minute)(deleteOldData(maybeDeletableDate, deleteForDate))
           }
           eventualTuple
         case _ =>
