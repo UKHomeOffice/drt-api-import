@@ -20,8 +20,8 @@ RUN apt-get update
 RUN apt-get install -y curl
 RUN rm -rf /var/cache/apt/*
 
-RUN mkdir -p /home/drt/.postgresql
-RUN curl https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem > /home/drt/.postgresql/root.crt
+RUN mkdir /home/drt/.postgresql
+RUN curl https://truststore.pki.rds.amazonaws.com/eu-west-2/eu-west-2-bundle.pem > /home/drt/.postgresql/root.crt
 
 USER 1001:0
 ENTRYPOINT ["/opt/docker/bin/drt-api-import"]
