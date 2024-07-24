@@ -79,7 +79,7 @@ object Application extends App {
         log.info(s"Last processed file: $lastFileName")
         feed.processFilesAfter(lastFileName)
       case None =>
-        val date = SDate.now().plus(2.days)
+        val date = SDate.now().plus(-2.days)
         val yyyymmdd: String = date.toYyyyMMdd
         val lastFilename = "drt_dq_" + yyyymmdd + "_000000_0000.zip"
         log.info(s"No last processed file. Starting from 2 days ago ($yyyymmdd)")
@@ -97,7 +97,7 @@ object Application extends App {
 
   if (config.getBoolean("app.purge-old-data"))
     actorSystem.scheduler.scheduleAtFixedRate(0.seconds, 1.minute)(() => Await.ready(deleteOldData(), 60.minutes))
-  
+
   sys.addShutdownHook {
     PostgresDb.close()
   }
