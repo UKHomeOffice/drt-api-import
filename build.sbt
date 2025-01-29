@@ -16,7 +16,7 @@ lazy val root = (project in file("."))
       "com.h2database" % "h2" % h2DatabaseVersion % Test,
       "com.typesafe.akka" %% "akka-stream" % akkaVersion,
       "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
-      "com.typesafe.akka" %% "akka-pki" % akkaVersion % Test,
+      "com.typesafe.akka" %% "akka-pki" % akkaVersion,
       "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % Test,
       "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion % Test,
 
