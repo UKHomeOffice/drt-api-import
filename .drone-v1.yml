@@ -59,6 +59,8 @@ steps:
     when:
       event:
         - push
+    depends_on:
+      - publish
 
   - name: sonar-scanner
     pull: if-not-exists
