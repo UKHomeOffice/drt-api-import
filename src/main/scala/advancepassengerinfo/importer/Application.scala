@@ -79,10 +79,11 @@ object Application extends App {
         log.info(s"Last processed file: $lastFileName")
         feed.processFilesAfter(lastFileName)
       case None =>
-        val date = SDate.now().plus(-2.days)
+        val ago = 1.days
+        val date = SDate.now().plus(-ago)
         val yyyymmdd: String = date.toYyyyMMdd
         val lastFilename = "drt_dq_" + yyyymmdd + "_000000_0000.zip"
-        log.info(s"No last processed file. Starting from 2 days ago ($yyyymmdd)")
+        log.info(s"No last processed file. Starting from $yyyymmdd (${-ago.toDays.toInt} days ago)")
         feed.processFilesAfter(lastFilename)
     }.runWith(Sink.ignore)
 

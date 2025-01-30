@@ -1,17 +1,17 @@
 object Dependencies {
-  val scalatestVersion = "3.2.15"
-  val typesafeConfigVersion = "1.4.2"
-  val akkaVersion = "2.7.0"
-  val akkaHttpVersion = "10.5.3"
-  val awsSdkS3Version = "2.19.33"
-  val jodaTimeVersion = "2.12.2"
-  val slickVersion = "3.4.1"
-  val sprayJsonVersion = "1.3.6"
-  val postgresqlVersion = "42.5.3"
-  val h2DatabaseVersion = "2.1.214"
+  val akkaVersion = "2.9.5" // last version with license key requirement
+  val akkaHttpVersion = "10.6.3" // last version dependent on akka 2.9.5
+
+  val scalatestVersion = "3.2.19"
+  val typesafeConfigVersion = "1.4.3"
+  val awsSdkS3Version = "2.30.2"
+  val jodaTimeVersion = "2.12.7"
+  val slickVersion = "3.5.2"
+  val postgresqlVersion = "42.7.5"
+  val h2DatabaseVersion = "2.3.232"
   val scalaLoggingVersion = "3.9.5"
-  val janinoVersion = "3.1.9"
+  val janinoVersion = "3.1.12"
   val censorinusVersion = "2.1.16"
-  val logbackVersion = "0.1.5"
-  val jacksonDatabindVersion = "2.14.2"
+  val jacksonDatabindVersion = "2.16.1"
+  val logbackContribVersion = "0.1.5"
 }
