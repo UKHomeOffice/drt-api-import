@@ -4,7 +4,7 @@ object Dependencies {
 
   val scalatestVersion = "3.2.19"
   val typesafeConfigVersion = "1.4.3"
-  val awsSdkS3Version = "2.30.2"
+  val awsSdkS3Version = "2.30.17"
   val jodaTimeVersion = "2.12.7"
   val slickVersion = "3.5.2"
   val postgresqlVersion = "42.7.5"
