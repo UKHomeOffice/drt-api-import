@@ -20,6 +20,7 @@ lazy val root = (project in file("."))
       "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % Test,
       "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion % Test,
 
+      "ch.qos.logback" % "logback-classic" % logbackVersion,
       "ch.qos.logback.contrib" % "logback-json-classic" % logbackContribVersion,
       "ch.qos.logback.contrib" % "logback-jackson" % logbackContribVersion,
       "com.fasterxml.jackson.core" % "jackson-databind" % jacksonDatabindVersion,
