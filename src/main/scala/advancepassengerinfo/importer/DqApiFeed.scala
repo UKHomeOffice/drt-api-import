@@ -3,8 +3,8 @@ package advancepassengerinfo.importer
 import advancepassengerinfo.health.LastCheckedState
 import advancepassengerinfo.importer.processor.DqFileProcessor
 import advancepassengerinfo.importer.provider.FileNames
-import akka.NotUsed
-import akka.stream.scaladsl.Source
+import org.apache.pekko.NotUsed
+import org.apache.pekko.stream.scaladsl.Source
 import com.typesafe.scalalogging.Logger
 import drtlib.SDate
 import metrics.MetricsCollectorLike

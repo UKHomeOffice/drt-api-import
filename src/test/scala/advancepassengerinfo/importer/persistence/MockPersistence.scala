@@ -4,7 +4,7 @@ import advancepassengerinfo.importer.persistence.MockPersistence.{JsonFileCall, 
 import advancepassengerinfo.importer.slickdb.dao.{ProcessedJsonDao, ProcessedZipDao, VoyageManifestPassengerInfoDao}
 import advancepassengerinfo.importer.slickdb.tables.{ProcessedZipRow, VoyageManifestPassengerInfoRow}
 import advancepassengerinfo.manifests.VoyageManifest
-import akka.actor.ActorRef
+import org.apache.pekko.actor.ActorRef
 import drtlib.SDate
 
 import scala.concurrent.Future

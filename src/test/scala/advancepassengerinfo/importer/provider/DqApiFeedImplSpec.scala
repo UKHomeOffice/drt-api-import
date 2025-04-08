@@ -3,10 +3,10 @@ package advancepassengerinfo.importer.provider
 import advancepassengerinfo.health.LastCheckedState
 import advancepassengerinfo.importer.DqApiFeedImpl
 import advancepassengerinfo.importer.processor.DqFileProcessor
-import akka.actor.{ActorRef, ActorSystem}
-import akka.stream.scaladsl.{Keep, Sink, Source}
-import akka.stream.{KillSwitches, UniqueKillSwitch}
-import akka.testkit.{TestKit, TestProbe}
+import org.apache.pekko.actor.{ActorRef, ActorSystem}
+import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
+import org.apache.pekko.stream.{KillSwitches, UniqueKillSwitch}
+import org.apache.pekko.testkit.{TestKit, TestProbe}
 import drtlib.SDate
 import metrics.MetricsCollectorLike
 import org.scalatest.BeforeAndAfterAll

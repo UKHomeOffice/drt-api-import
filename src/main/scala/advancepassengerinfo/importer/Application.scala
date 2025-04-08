@@ -6,9 +6,9 @@ import advancepassengerinfo.importer.provider._
 import advancepassengerinfo.importer.services.Retention
 import advancepassengerinfo.importer.slickdb.DatabaseImpl
 import advancepassengerinfo.importer.slickdb.dao.{DataRetentionDao, ProcessedJsonDaoImpl, ProcessedZipDaoImpl, VoyageManifestPassengerInfoDaoImpl}
-import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.stream.scaladsl.{Sink, Source}
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.Http
+import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.Logger
 import drtlib.SDate

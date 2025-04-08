@@ -1,7 +1,7 @@
 package advancepassengerinfo.health
 
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.testkit.ScalatestRouteTest
+import org.apache.pekko.http.scaladsl.model.StatusCodes
+import org.apache.pekko.http.scaladsl.testkit.ScalatestRouteTest
 import drtlib.SDate
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers

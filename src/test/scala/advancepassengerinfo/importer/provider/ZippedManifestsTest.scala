@@ -1,9 +1,9 @@
 package advancepassengerinfo.importer.provider
 
 import advancepassengerinfo.manifests.VoyageManifest
-import akka.actor.ActorSystem
-import akka.stream.scaladsl.Sink
-import akka.testkit.TestKit
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.scaladsl.Sink
+import org.apache.pekko.testkit.TestKit
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike

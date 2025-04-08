@@ -7,8 +7,8 @@ import advancepassengerinfo.importer.slickdb.tables._
 import advancepassengerinfo.importer.slickdb.tables
 import advancepassengerinfo.importer.{InMemoryDatabase, PostgresDateHelpers}
 import advancepassengerinfo.manifests.{PassengerInfo, VoyageManifest}
-import akka.actor.ActorSystem
-import akka.stream.Materializer
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.Materializer
 import drtlib.SDate
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.should.Matchers
