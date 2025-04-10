@@ -1,8 +1,6 @@
 object Dependencies {
   lazy val pekkoVersion = "1.1.3"
   lazy val pekkoHttpVersion = "1.1.0"
-//  val akkaVersion = "2.9.5" // last version with license key requirement
-//  val akkaHttpVersion = "10.6.3" // last version dependent on akka 2.9.5
 
   val scalatestVersion = "3.2.19"
   val typesafeConfigVersion = "1.4.3"
