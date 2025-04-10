@@ -5,8 +5,8 @@ import advancepassengerinfo.importer.slickdb.dao.{ProcessedJsonDao, ProcessedZip
 import advancepassengerinfo.importer.slickdb.serialisation.VoyageManifestSerialisation.voyageManifestRows
 import advancepassengerinfo.importer.slickdb.tables.{ProcessedJsonRow, ProcessedZipRow}
 import advancepassengerinfo.manifests.VoyageManifest
-import akka.NotUsed
-import akka.stream.scaladsl.Source
+import org.apache.pekko.NotUsed
+import org.apache.pekko.stream.scaladsl.Source
 import com.typesafe.scalalogging.Logger
 import drtlib.SDate
 

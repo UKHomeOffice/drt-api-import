@@ -2,8 +2,8 @@ package advancepassengerinfo.importer.provider
 
 import advancepassengerinfo.importer.parser.JsonManifestParser
 import advancepassengerinfo.manifests.VoyageManifest
-import akka.NotUsed
-import akka.stream.scaladsl.Source
+import org.apache.pekko.NotUsed
+import org.apache.pekko.stream.scaladsl.Source
 
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.zip.ZipInputStream

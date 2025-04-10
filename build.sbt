@@ -8,17 +8,14 @@ ThisBuild / organizationName := "drt"
 lazy val root = (project in file("."))
   .settings(
     name := "drt-api-import",
-    resolvers ++= Seq(
-      "Akka library repository".at("https://repo.akka.io/maven"),
-    ),
     libraryDependencies ++= Def.setting(Seq(
       "org.scalatest" %% "scalatest" % scalatestVersion % Test,
       "com.h2database" % "h2" % h2DatabaseVersion % Test,
-      "com.typesafe.akka" %% "akka-stream" % akkaVersion,
-      "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
-      "com.typesafe.akka" %% "akka-pki" % akkaVersion,
-      "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % Test,
-      "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion % Test,
+      "org.apache.pekko" %% "pekko-stream" % pekkoVersion,
+      "org.apache.pekko" %% "pekko-http" % pekkoHttpVersion,
+      "org.apache.pekko" %% "pekko-pki" % pekkoVersion,
+      "org.apache.pekko" %% "pekko-http-testkit" % pekkoHttpVersion % Test,
+      "org.apache.pekko" %% "pekko-stream-testkit" % pekkoVersion % Test,
 
       "ch.qos.logback" % "logback-classic" % logbackVersion,
       "ch.qos.logback.contrib" % "logback-json-classic" % logbackContribVersion,
@@ -33,7 +30,7 @@ lazy val root = (project in file("."))
       "com.typesafe.slick" %% "slick" % slickVersion,
       "com.typesafe.slick" %% "slick-codegen" % slickVersion,
       "com.typesafe.slick" %% "slick-hikaricp" % slickVersion,
-      "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
+      "org.apache.pekko" %% "pekko-http-spray-json" % pekkoHttpVersion,
       "org.postgresql" % "postgresql" % postgresqlVersion,
       "com.github.gphat" %% "censorinus" % censorinusVersion,
     )).value,
