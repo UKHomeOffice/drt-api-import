@@ -7,7 +7,7 @@ object Dependencies {
   val awsSdkS3Version = "2.30.2"
   val jodaTimeVersion = "2.12.7"
   val slickVersion = "3.5.2"
-  val postgresqlVersion = "42.7.5"
+  val postgresqlVersion = "42.7.6"
   val h2DatabaseVersion = "2.3.232"
   val scalaLoggingVersion = "3.9.5"
   val janinoVersion = "3.1.12"
