@@ -3,7 +3,7 @@ object Dependencies {
   lazy val pekkoHttpVersion = "1.1.0"
 
   val scalatestVersion = "3.2.19"
-  val typesafeConfigVersion = "1.4.3"
+  val typesafeConfigVersion = "1.4.4"
   val awsSdkS3Version = "2.30.2"
   val jodaTimeVersion = "2.12.7"
   val slickVersion = "3.5.2"
