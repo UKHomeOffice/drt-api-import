@@ -1,5 +1,5 @@
 object Dependencies {
-  lazy val pekkoVersion = "1.1.3"
+  lazy val pekkoVersion = "1.1.5"
   lazy val pekkoHttpVersion = "1.1.0"
 
   val scalatestVersion = "3.2.19"
