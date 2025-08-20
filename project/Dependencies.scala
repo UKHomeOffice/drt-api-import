@@ -12,7 +12,7 @@ object Dependencies {
   val scalaLoggingVersion = "3.9.5"
   val janinoVersion = "3.1.12"
   val censorinusVersion = "2.1.16"
-  val jacksonDatabindVersion = "2.16.1"
+  val jacksonDatabindVersion = "2.16.2"
   val logbackContribVersion = "0.1.5"
   val logbackVersion = "1.3.15"
 }
