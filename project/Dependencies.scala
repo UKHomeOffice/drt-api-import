@@ -6,7 +6,7 @@ object Dependencies {
   val typesafeConfigVersion = "1.4.3"
   val awsSdkS3Version = "2.30.2"
   val jodaTimeVersion = "2.12.7"
-  val slickVersion = "3.5.2"
+  val slickVersion = "3.6.1"
   val postgresqlVersion = "42.7.5"
   val h2DatabaseVersion = "2.3.232"
   val scalaLoggingVersion = "3.9.5"
