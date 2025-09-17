@@ -9,7 +9,7 @@ object Dependencies {
   val slickVersion = "3.5.2"
   val postgresqlVersion = "42.7.5"
   val h2DatabaseVersion = "2.3.232"
-  val scalaLoggingVersion = "3.9.5"
+  val scalaLoggingVersion = "3.9.6"
   val janinoVersion = "3.1.12"
   val censorinusVersion = "2.1.16"
   val jacksonDatabindVersion = "2.16.1"
