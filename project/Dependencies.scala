@@ -8,7 +8,7 @@ object Dependencies {
   val jodaTimeVersion = "2.12.7"
   val slickVersion = "3.5.2"
   val postgresqlVersion = "42.7.5"
-  val h2DatabaseVersion = "2.3.232"
+  val h2DatabaseVersion = "2.4.240"
   val scalaLoggingVersion = "3.9.5"
   val janinoVersion = "3.1.12"
   val censorinusVersion = "2.1.16"
