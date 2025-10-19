@@ -14,5 +14,5 @@ object Dependencies {
   val censorinusVersion = "2.1.16"
   val jacksonDatabindVersion = "2.16.1"
   val logbackContribVersion = "0.1.5"
-  val logbackVersion = "1.3.15"
+  val logbackVersion = "1.5.20"
 }
