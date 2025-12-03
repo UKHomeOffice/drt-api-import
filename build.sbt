@@ -1,4 +1,5 @@
-import Dependencies._
+import Dependencies.*
+import net.nmoncho.sbt.dependencycheck.settings.AnalyzerSettings
 
 ThisBuild / scalaVersion := "2.13.15"
 ThisBuild / version := "0.1.0-SNAPSHOT"
@@ -43,3 +44,16 @@ lazy val root = (project in file("."))
   )
   .enablePlugins(DockerPlugin)
   .enablePlugins(AshScriptPlugin)
+
+ThisBuild / dependencyCheckAnalyzers := dependencyCheckAnalyzers.value.copy(
+  ossIndex = AnalyzerSettings.OssIndex(
+    enabled = Some(false),
+    url = None,
+    batchSize = None,
+    requestDelay = None,
+    useCache = None,
+    warnOnlyOnRemoteErrors = None,
+    username = None,
+    password = None
+  )
+)
