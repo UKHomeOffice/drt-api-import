@@ -10,7 +10,8 @@ object SbtUpdatesSettings {
     dependencyUpdatesFailBuild := false,
     dependencyUpdatesFilter -= moduleFilter("org.scala-lang"),
     dependencyUpdatesFilter -= moduleFilter("org.apache.pekko"),
-    dependencyUpdatesFilter -= moduleFilter("com.typesafe.slick")
+    dependencyUpdatesFilter -= moduleFilter("com.typesafe.slick"),
+    dependencyUpdatesFilter -= moduleFilter("com.fasterxml.jackson.core") // to be reviewed manually for compatibility with Pekko
     // Pekko and Slick updates are intentionally reviewed manually because they are higher risk in this repo.
     // Keep them out of the default dependencyUpdates output so the report stays focused on lower-risk upgrades.
   )

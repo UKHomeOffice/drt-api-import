@@ -6,6 +6,22 @@ This service ingests Advance Passenger Information (API) data and provides a RES
 This codebase contains a Scala backend built using sbt. The service fetches API data from an S3 bucket, parses it and
 persists in a central database
 
+## Running tests and build checks
+
+To run the standard local verification flow from the repository root, use:
+
+```bash
+./run_tests.sh
+```
+
+The script runs the current sbt validation sequence used for dependency-cleanup and build verification work:
+
+```bash
+sbt clean scalafmtAll scalafmtSbt compile coverage test coverageOff coverageReport dependencyUpdates
+```
+
+This covers formatting, compilation, unit tests, coverage report generation, and a dependency update report.
+
 ## Scala Backend
 
 NB this app requires the ACP prod VPN in order to access the S3 bucket 
