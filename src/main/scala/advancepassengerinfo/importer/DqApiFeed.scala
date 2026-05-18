@@ -11,18 +11,19 @@ import metrics.MetricsCollectorLike
 
 import java.time.Instant
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 trait DqApiFeed {
   def processFilesAfter(lastFileName: String): Source[String, NotUsed]
 }
 
-case class DqApiFeedImpl(fileNamesProvider: FileNames,
-                         fileProcessor: DqFileProcessor,
-                         throttle: FiniteDuration,
-                         metricsCollector: MetricsCollectorLike,
-                         lastCheckedState: LastCheckedState)
-                        (implicit ec: ExecutionContext) extends DqApiFeed {
+case class DqApiFeedImpl(
+    fileNamesProvider: FileNames,
+    fileProcessor: DqFileProcessor,
+    throttle: FiniteDuration,
+    metricsCollector: MetricsCollectorLike,
+    lastCheckedState: LastCheckedState
+)(implicit ec: ExecutionContext) extends DqApiFeed {
   private val log = Logger(getClass)
 
   override def processFilesAfter(lastFileName: String): Source[String, NotUsed] =
@@ -62,7 +63,6 @@ case class DqApiFeedImpl(fileNamesProvider: FileNames,
         else
           metricsCollector.counter("api-dq-zip-processed", 0)
       )
-
 
   private def markerAndNextFileNames(lastFile: String): Future[(String, List[String])] =
     fileNamesProvider.nextFiles(lastFile)

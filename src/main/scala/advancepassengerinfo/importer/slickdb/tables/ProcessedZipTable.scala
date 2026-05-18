@@ -1,7 +1,7 @@
 package advancepassengerinfo.importer.slickdb.tables
 
 import advancepassengerinfo.importer.slickdb.DatabaseImpl.profile.api._
-import slick.lifted.{Rep, Tag}
+import slick.lifted.{ Rep, Tag }
 
 import java.sql.Timestamp
 

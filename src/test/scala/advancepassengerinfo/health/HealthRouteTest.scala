@@ -6,8 +6,7 @@ import drtlib.SDate
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
-
+import scala.concurrent.duration.{ DurationInt, FiniteDuration }
 
 class HealthRouteTest extends AnyFlatSpec with Matchers with ScalatestRouteTest {
 

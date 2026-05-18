@@ -1,13 +1,35 @@
 package advancepassengerinfo.importer.slickdb.tables
 
 import advancepassengerinfo.importer.slickdb.DatabaseImpl.profile.api._
-import slick.lifted.{Rep, Tag}
+import slick.lifted.{ Rep, Tag }
 
 import java.sql.Timestamp
 
 /** Table description of table arrival. Objects of this class serve as prototypes for rows in queries. */
-class VoyageManifestPassengerInfoTable(_tableTag: Tag) extends Table[VoyageManifestPassengerInfoRow](_tableTag, Option("public"), "voyage_manifest_passenger_info") {
-  def * = (event_code, arrival_port_code, departure_port_code, voyage_number, carrier_code, scheduled_date, day_of_week, week_of_year, document_type, document_issuing_country_code, eea_flag, age, disembarkation_port_code, in_transit_flag, disembarkation_port_country_code, nationality_country_code, passenger_identifier, in_transit, json_file) <> (VoyageManifestPassengerInfoRow.tupled, VoyageManifestPassengerInfoRow.unapply)
+class VoyageManifestPassengerInfoTable(_tableTag: Tag)
+    extends Table[VoyageManifestPassengerInfoRow](_tableTag, Option("public"), "voyage_manifest_passenger_info") {
+  def * =
+    (
+      event_code,
+      arrival_port_code,
+      departure_port_code,
+      voyage_number,
+      carrier_code,
+      scheduled_date,
+      day_of_week,
+      week_of_year,
+      document_type,
+      document_issuing_country_code,
+      eea_flag,
+      age,
+      disembarkation_port_code,
+      in_transit_flag,
+      disembarkation_port_country_code,
+      nationality_country_code,
+      passenger_identifier,
+      in_transit,
+      json_file
+    ) <> (VoyageManifestPassengerInfoRow.tupled, VoyageManifestPassengerInfoRow.unapply)
 
   val event_code: Rep[String] = column[String]("event_code")
   val arrival_port_code: Rep[String] = column[String]("arrival_port_code")

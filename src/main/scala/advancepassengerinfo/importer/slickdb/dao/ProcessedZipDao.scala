@@ -2,10 +2,9 @@ package advancepassengerinfo.importer.slickdb.dao
 
 import advancepassengerinfo.importer.Db
 import advancepassengerinfo.importer.slickdb.DatabaseImpl.profile.api._
-import advancepassengerinfo.importer.slickdb.tables.{ProcessedZipRow, ProcessedZipTable}
+import advancepassengerinfo.importer.slickdb.tables.{ ProcessedZipRow, ProcessedZipTable }
 
 import scala.concurrent.Future
-
 
 trait ProcessedZipDao {
   def insert(row: ProcessedZipRow): Future[Unit]
@@ -37,4 +36,3 @@ case class ProcessedZipDaoImpl(db: Db) extends ProcessedZipDao {
     db.run(query.result)
   }
 }
-

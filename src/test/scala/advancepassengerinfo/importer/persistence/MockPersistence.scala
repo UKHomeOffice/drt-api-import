@@ -1,8 +1,8 @@
 package advancepassengerinfo.importer.persistence
 
-import advancepassengerinfo.importer.persistence.MockPersistence.{JsonFileCall, ManifestCall, ZipFileCall}
-import advancepassengerinfo.importer.slickdb.dao.{ProcessedJsonDao, ProcessedZipDao, VoyageManifestPassengerInfoDao}
-import advancepassengerinfo.importer.slickdb.tables.{ProcessedZipRow, VoyageManifestPassengerInfoRow}
+import advancepassengerinfo.importer.persistence.MockPersistence.{ JsonFileCall, ManifestCall, ZipFileCall }
+import advancepassengerinfo.importer.slickdb.dao.{ ProcessedJsonDao, ProcessedZipDao, VoyageManifestPassengerInfoDao }
+import advancepassengerinfo.importer.slickdb.tables.{ ProcessedZipRow, VoyageManifestPassengerInfoRow }
 import advancepassengerinfo.manifests.VoyageManifest
 import org.apache.pekko.actor.ActorRef
 import drtlib.SDate
@@ -35,7 +35,8 @@ case class MockJsonDao(probe: ActorRef) extends ProcessedJsonDao {
     probe ! JsonFileCall(row.zip_file_name, row.json_file_name, row.success, row.suspicious_date)
     Future.successful()
   }
-  override def jsonHasBeenProcessed(zipFileName: String, jsonFileName: String): Future[Boolean] = Future.successful(false)
+  override def jsonHasBeenProcessed(zipFileName: String, jsonFileName: String): Future[Boolean] =
+    Future.successful(false)
 
   override def earliestUnpopulatedDate(since: Long): Future[Option[String]] = Future.successful(Option("2021-01-01"))
 

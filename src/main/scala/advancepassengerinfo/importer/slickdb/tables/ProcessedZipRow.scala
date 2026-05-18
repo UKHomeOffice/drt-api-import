@@ -10,6 +10,6 @@ object ProcessedZipRow {
 
   def extractCreatedOn(fileName: String): Option[String] = fileName match {
     case dqFileNameDateRegex(year, month, day) => Option(s"20$year-$month-$day")
-    case _ => None
+    case _                                     => None
   }
 }

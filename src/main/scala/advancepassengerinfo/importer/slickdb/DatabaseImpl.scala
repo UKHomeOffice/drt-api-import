@@ -1,6 +1,6 @@
 package advancepassengerinfo.importer.slickdb
 
-import slick.dbio.{DBIOAction, NoStream}
+import slick.dbio.{ DBIOAction, NoStream }
 
 import scala.concurrent.Future
 

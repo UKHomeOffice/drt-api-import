@@ -4,7 +4,7 @@ import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.server.Directives._
 import org.apache.pekko.http.scaladsl.server.Route
 
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration.{ DurationInt, FiniteDuration }
 
 object HealthRoute {
 
@@ -21,4 +21,3 @@ object HealthRoute {
       isHealthy(lastCheckedState, threshold)
     }
 }
-

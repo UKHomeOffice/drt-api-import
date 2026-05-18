@@ -2,11 +2,10 @@ package advancepassengerinfo.importer.slickdb.dao
 
 import advancepassengerinfo.importer.Db
 import advancepassengerinfo.importer.slickdb.DatabaseImpl.profile.api._
-import advancepassengerinfo.importer.slickdb.tables.{ProcessedJsonRow, ProcessedJsonTable, ProcessedZipTable}
+import advancepassengerinfo.importer.slickdb.tables.{ ProcessedJsonRow, ProcessedJsonTable, ProcessedZipTable }
 import drtlib.SDate
 
-import scala.concurrent.{ExecutionContext, Future}
-
+import scala.concurrent.{ ExecutionContext, Future }
 
 trait ProcessedJsonDao {
   def insert(row: ProcessedJsonRow): Future[Unit]
@@ -20,8 +19,7 @@ trait ProcessedJsonDao {
   def delete(jsonFileName: String): Future[Int]
 }
 
-case class ProcessedJsonDaoImpl(db: Db)
-                               (implicit ec: ExecutionContext) extends ProcessedJsonDao {
+case class ProcessedJsonDaoImpl(db: Db)(implicit ec: ExecutionContext) extends ProcessedJsonDao {
   private val table = TableQuery[ProcessedJsonTable]
   private val zipTable = TableQuery[ProcessedZipTable]
 
@@ -33,22 +31,24 @@ case class ProcessedJsonDaoImpl(db: Db)
   }
 
   def earliestUnpopulatedDate(since: Long): Future[Option[String]] = {
-    val query = table join zipTable on {
+    val query = table.join(zipTable).on {
       case (json, zip) => json.zip_file_name === zip.zip_file_name
-    } filter {
+    }.filter {
       case (json, zip) =>
-        json.non_interactive_total_count.isEmpty && json.success && zip.success && zip.created_on >= SDate(since).toIsoDate
-    } sortBy {
+        json.non_interactive_total_count.isEmpty && json.success && zip.success &&
+        zip.created_on >= SDate(since).toIsoDate
+    }.sortBy {
       case (_, zip) => zip.created_on.asc
-    } map {
+    }.map {
       case (_, zip) => zip.created_on
-    } take 1
+    }.take(1)
 
     db.run(query.result).map(_.headOption.flatten)
   }
 
   def populateManifestColumnsForDate(date: String): Future[Int] = {
-    val query = sql"""UPDATE processed_json pj
+    val query =
+      sql"""UPDATE processed_json pj
           set (arrival_port_code, departure_port_code, voyage_number, carrier_code, scheduled, event_code,
             non_interactive_total_count, non_interactive_trans_count, interactive_total_count, interactive_trans_count) = (
               select

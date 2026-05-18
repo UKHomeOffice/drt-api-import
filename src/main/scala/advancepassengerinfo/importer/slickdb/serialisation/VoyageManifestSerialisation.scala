@@ -1,19 +1,27 @@
 package advancepassengerinfo.importer.slickdb.serialisation
 
 import advancepassengerinfo.importer.slickdb.tables.VoyageManifestPassengerInfoRow
-import advancepassengerinfo.manifests.{PassengerInfo, VoyageManifest}
+import advancepassengerinfo.manifests.{ PassengerInfo, VoyageManifest }
 
 import java.sql.Timestamp
 import scala.util.Try
 
 object VoyageManifestSerialisation {
-  def voyageManifestRows(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, jsonFile: String): List[VoyageManifestPassengerInfoRow] = {
+  def voyageManifestRows(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, jsonFile: String)
+      : List[VoyageManifestPassengerInfoRow] = {
     val schTs = new Timestamp(vm.scheduleArrivalDateTime.map(_.millisSinceEpoch).getOrElse(0L))
 
     vm.bestPassengers.map { passenger => passengerRow(vm, dayOfWeek, weekOfYear, schTs, passenger, jsonFile) }
   }
 
-  def passengerRow(vm: VoyageManifest, dayOfWeek: Int, weekOfYear: Int, schTs: Timestamp, p: PassengerInfo, jsonFile: String): VoyageManifestPassengerInfoRow = {
+  def passengerRow(
+      vm: VoyageManifest,
+      dayOfWeek: Int,
+      weekOfYear: Int,
+      schTs: Timestamp,
+      p: PassengerInfo,
+      jsonFile: String
+  ): VoyageManifestPassengerInfoRow = {
     VoyageManifestPassengerInfoRow(
       event_code = vm.EventCode,
       arrival_port_code = vm.ArrivalPortCode,
@@ -34,7 +42,7 @@ object VoyageManifestSerialisation {
       passenger_identifier = p.PassengerIdentifier.getOrElse(""),
       in_transit = p.InTransitFlag match {
         case "Y" => true
-        case _ => false
+        case _   => false
       },
       json_file = jsonFile
     )

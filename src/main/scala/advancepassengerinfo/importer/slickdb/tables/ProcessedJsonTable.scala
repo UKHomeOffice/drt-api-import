@@ -1,11 +1,13 @@
 package advancepassengerinfo.importer.slickdb.tables
 
 import advancepassengerinfo.importer.slickdb.DatabaseImpl.profile.api._
-import slick.lifted.{Rep, Tag}
+import slick.lifted.{ Rep, Tag }
 
 import java.sql.Timestamp
 
-class ProcessedJsonTable(_tableTag: Tag) extends Table[ProcessedJsonRow](_tableTag, Option("public"), "processed_json") {
+class ProcessedJsonTable(
+    _tableTag: Tag
+) extends Table[ProcessedJsonRow](_tableTag, Option("public"), "processed_json") {
   val zip_file_name: Rep[String] = column[String]("zip_file_name")
   val json_file_name: Rep[String] = column[String]("json_file_name")
   val suspicious_date: Rep[Boolean] = column[Boolean]("suspicious_date")
@@ -22,7 +24,21 @@ class ProcessedJsonTable(_tableTag: Tag) extends Table[ProcessedJsonRow](_tableT
   val interactive_total_count: Rep[Option[Int]] = column[Option[Int]]("interactive_total_count")
   val interactive_trans_count: Rep[Option[Int]] = column[Option[Int]]("interactive_trans_count")
 
-  def * = (zip_file_name, json_file_name, suspicious_date, success, processed_at,
-    arrival_port_code, departure_port_code, voyage_number, carrier_code, scheduled,
-    event_code, non_interactive_total_count, non_interactive_trans_count, interactive_total_count, interactive_trans_count).mapTo[ProcessedJsonRow]
+  def * = (
+    zip_file_name,
+    json_file_name,
+    suspicious_date,
+    success,
+    processed_at,
+    arrival_port_code,
+    departure_port_code,
+    voyage_number,
+    carrier_code,
+    scheduled,
+    event_code,
+    non_interactive_total_count,
+    non_interactive_trans_count,
+    interactive_total_count,
+    interactive_trans_count
+  ).mapTo[ProcessedJsonRow]
 }

@@ -15,12 +15,12 @@ object PostgresDateHelpers {
   }
 
   def dayOfTheWeek(date: SDate): Int = date.dayOfWeek match {
-    case DateTimeConstants.SUNDAY => DayOfTheWeek.Sunday
-    case DateTimeConstants.MONDAY => DayOfTheWeek.Monday
-    case DateTimeConstants.TUESDAY => DayOfTheWeek.Tuesday
+    case DateTimeConstants.SUNDAY    => DayOfTheWeek.Sunday
+    case DateTimeConstants.MONDAY    => DayOfTheWeek.Monday
+    case DateTimeConstants.TUESDAY   => DayOfTheWeek.Tuesday
     case DateTimeConstants.WEDNESDAY => DayOfTheWeek.Wednesday
-    case DateTimeConstants.THURSDAY => DayOfTheWeek.Thursday
-    case DateTimeConstants.FRIDAY => DayOfTheWeek.Friday
-    case DateTimeConstants.SATURDAY => DayOfTheWeek.Saturday
+    case DateTimeConstants.THURSDAY  => DayOfTheWeek.Thursday
+    case DateTimeConstants.FRIDAY    => DayOfTheWeek.Friday
+    case DateTimeConstants.SATURDAY  => DayOfTheWeek.Saturday
   }
 }

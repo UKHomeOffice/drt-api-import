@@ -2,20 +2,23 @@ package advancepassengerinfo.importer.slickdb.dao
 
 import advancepassengerinfo.importer.Db
 import advancepassengerinfo.importer.slickdb.DatabaseImpl.profile.api._
-import advancepassengerinfo.importer.slickdb.tables.{ProcessedJsonTable, ProcessedZipTable, VoyageManifestPassengerInfoTable}
+import advancepassengerinfo.importer.slickdb.tables.{
+  ProcessedJsonTable,
+  ProcessedZipTable,
+  VoyageManifestPassengerInfoTable
+}
 import drtlib.SDate
 import org.slf4j.LoggerFactory
 import slick.lifted.TableQuery
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
-case class DataRetentionDao(db: Db)
-                           (implicit ec: ExecutionContext) {
+final case class DataRetentionDao(db: Db)(implicit ec: ExecutionContext) {
   private val log = LoggerFactory.getLogger(getClass)
 
   private val zipTable = TableQuery[ProcessedZipTable]
   private val jsonTable = TableQuery[ProcessedJsonTable]
-  private val jsonWithZip = jsonTable join zipTable on (_.zip_file_name === _.zip_file_name)
+  private val jsonWithZip = jsonTable.join(zipTable).on(_.zip_file_name === _.zip_file_name)
   private val manifestTable = TableQuery[VoyageManifestPassengerInfoTable]
 
   def deleteForDate(date: SDate, maxBatchSize: Int): Future[(Int, Int, Int)] = {

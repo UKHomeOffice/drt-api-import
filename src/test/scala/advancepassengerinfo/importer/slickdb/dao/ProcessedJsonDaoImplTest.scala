@@ -5,7 +5,7 @@ import advancepassengerinfo.importer.InMemoryDatabase
 import advancepassengerinfo.importer.slickdb.DatabaseImpl.profile.api._
 import advancepassengerinfo.importer.slickdb.ProcessedJsonGenerator
 import advancepassengerinfo.importer.slickdb.serialisation.VoyageManifestSerialisation.voyageManifestRows
-import advancepassengerinfo.importer.slickdb.tables.{ProcessedJsonTable, ProcessedZipRow}
+import advancepassengerinfo.importer.slickdb.tables.{ ProcessedJsonTable, ProcessedZipRow }
 import drtlib.SDate
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.should.Matchers
@@ -13,7 +13,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import slick.lifted.TableQuery
 
 import java.sql.Timestamp
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{ Await, ExecutionContext }
 import scala.concurrent.duration.DurationInt
 
 class ProcessedJsonDaoImplTest extends AnyWordSpec with Matchers with BeforeAndAfter {
@@ -81,7 +81,7 @@ class ProcessedJsonDaoImplTest extends AnyWordSpec with Matchers with BeforeAndA
           voyage_number = None,
           carrier_code = None,
           scheduled = None,
-          event_code = None,
+          event_code = None
         )
       val result = zipDao.insert(zipRow)
         .flatMap(_ => dao.insert(row))
@@ -113,7 +113,7 @@ class ProcessedJsonDaoImplTest extends AnyWordSpec with Matchers with BeforeAndA
         non_interactive_total_count = Option(0),
         non_interactive_trans_count = Option(0),
         interactive_total_count = Option(1),
-        interactive_trans_count = Option(0),
+        interactive_trans_count = Option(0)
       )
     }
 
@@ -137,7 +137,7 @@ class ProcessedJsonDaoImplTest extends AnyWordSpec with Matchers with BeforeAndA
         non_interactive_total_count = Option(0),
         non_interactive_trans_count = Option(0),
         interactive_total_count = Option(0),
-        interactive_trans_count = Option(0),
+        interactive_trans_count = Option(0)
       )
     }
 
@@ -167,7 +167,7 @@ class ProcessedJsonDaoImplTest extends AnyWordSpec with Matchers with BeforeAndA
         non_interactive_total_count = Option(0),
         non_interactive_trans_count = Option(0),
         interactive_total_count = Option(1),
-        interactive_trans_count = Option(0),
+        interactive_trans_count = Option(0)
       )
     }
   }

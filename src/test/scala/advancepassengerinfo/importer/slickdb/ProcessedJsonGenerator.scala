@@ -18,7 +18,7 @@ object ProcessedJsonGenerator {
     non_interactive_total_count = Option(1),
     non_interactive_trans_count = Option(1),
     interactive_total_count = Option(1),
-    interactive_trans_count = Option(1),
+    interactive_trans_count = Option(1)
   )
 
   def unpopulated(zipFileName: String, jsonFileName: String): ProcessedJsonRow = ProcessedJsonRow(
@@ -36,6 +36,6 @@ object ProcessedJsonGenerator {
     non_interactive_total_count = None,
     non_interactive_trans_count = None,
     interactive_total_count = None,
-    interactive_trans_count = None,
+    interactive_trans_count = None
   )
 }

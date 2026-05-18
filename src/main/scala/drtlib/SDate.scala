@@ -1,8 +1,8 @@
 package drtlib
 
 import drtlib.SDate.implicits
-import org.joda.time.{DateTime, DateTimeZone}
-import org.slf4j.{Logger, LoggerFactory}
+import org.joda.time.{ DateTime, DateTimeZone }
+import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -32,7 +32,6 @@ case class SDate(dateTime: DateTime) {
 
   val toIsoDate: String = f"$fullYear%04d-$month%02d-$date%02d"
 }
-
 
 object SDate {
   val log: Logger = LoggerFactory.getLogger(getClass)

@@ -4,7 +4,7 @@ import advancepassengerinfo.generator.ManifestGenerator
 import advancepassengerinfo.importer.InMemoryDatabase
 import advancepassengerinfo.importer.slickdb.DatabaseImpl.profile.api._
 import advancepassengerinfo.importer.slickdb.serialisation.VoyageManifestSerialisation.voyageManifestRows
-import advancepassengerinfo.importer.slickdb.tables.{VoyageManifestPassengerInfoRow, VoyageManifestPassengerInfoTable}
+import advancepassengerinfo.importer.slickdb.tables.{ VoyageManifestPassengerInfoRow, VoyageManifestPassengerInfoTable }
 import drtlib.SDate
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.should.Matchers
@@ -12,7 +12,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import slick.lifted.TableQuery
 
 import java.sql.Timestamp
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{ Await, ExecutionContext }
 import scala.concurrent.duration.DurationInt
 
 class VoyageManifestPassengerInfoDaoImplTest extends AnyWordSpec with Matchers with BeforeAndAfter {
@@ -32,8 +32,27 @@ class VoyageManifestPassengerInfoDaoImplTest extends AnyWordSpec with Matchers w
         .flatMap(_ => InMemoryDatabase.run(table.result))
       val scheduled = new Timestamp(SDate("2024-04-22T10:30:00.0").millisSinceEpoch)
 
-      Await.result(result, 1.second) shouldBe Vector(VoyageManifestPassengerInfoRow("DC", "LHR", "JFK", 1000, "BA",
-        scheduled, 1, 2, "P", "GBR", "Y", 22, "LHR", "N", "GBR", "GBR", "123", in_transit = false, "test.json"))
+      Await.result(result, 1.second) shouldBe Vector(VoyageManifestPassengerInfoRow(
+        "DC",
+        "LHR",
+        "JFK",
+        1000,
+        "BA",
+        scheduled,
+        1,
+        2,
+        "P",
+        "GBR",
+        "Y",
+        22,
+        "LHR",
+        "N",
+        "GBR",
+        "GBR",
+        "123",
+        in_transit = false,
+        "test.json"
+      ))
     }
   }
 

@@ -2,7 +2,7 @@ package advancepassengerinfo.importer.slickdb.dao
 
 import advancepassengerinfo.importer.InMemoryDatabase
 import advancepassengerinfo.importer.slickdb.DatabaseImpl.profile.api._
-import advancepassengerinfo.importer.slickdb.tables.{ProcessedZipRow, ProcessedZipTable}
+import advancepassengerinfo.importer.slickdb.tables.{ ProcessedZipRow, ProcessedZipTable }
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

@@ -29,15 +29,24 @@ class DataRetentionDaoTest extends AnyWordSpec with Matchers with BeforeAndAfter
   private val jsonTable = TableQuery[ProcessedJsonTable]
   private val manifestsTable = TableQuery[VoyageManifestPassengerInfoTable]
 
-  private val zip0101 = ProcessedZipRow("drt_dq_210101_144059_6361.zip", success = true, new Timestamp(0), Option("2021-01-01"))
-  private val zip0102 = ProcessedZipRow("drt_dq_210102_144059_6362.zip", success = true, new Timestamp(0), Option("2021-01-02"))
-  private val zip0103 = ProcessedZipRow("drt_dq_210103_144059_6363.zip", success = true, new Timestamp(0), Option("2021-01-03"))
-  private val json0101 = ProcessedJsonGenerator.unpopulated("drt_dq_210101_144059_6361.zip", "drt_dq_210101_144059_6361.json")
-  private val json0102 = ProcessedJsonGenerator.unpopulated("drt_dq_210102_144059_6362.zip", "drt_dq_210102_144059_6362.json")
-  private val json0103 = ProcessedJsonGenerator.unpopulated("drt_dq_210103_144059_6363.zip", "drt_dq_210103_144059_6363.json")
-  private val manifests0101 = voyageManifestRows(ManifestGenerator.manifest("2021-01-01", "10:00"), 1, 2, "drt_dq_210101_144059_6361.json")
-  private val manifests0102 = voyageManifestRows(ManifestGenerator.manifest("2021-01-02", "10:00"), 2, 2, "drt_dq_210102_144059_6362.json")
-  private val manifests0103 = voyageManifestRows(ManifestGenerator.manifest("2021-01-03", "10:00"), 3, 2, "drt_dq_210103_144059_6363.json")
+  private val zip0101 =
+    ProcessedZipRow("drt_dq_210101_144059_6361.zip", success = true, new Timestamp(0), Option("2021-01-01"))
+  private val zip0102 =
+    ProcessedZipRow("drt_dq_210102_144059_6362.zip", success = true, new Timestamp(0), Option("2021-01-02"))
+  private val zip0103 =
+    ProcessedZipRow("drt_dq_210103_144059_6363.zip", success = true, new Timestamp(0), Option("2021-01-03"))
+  private val json0101 =
+    ProcessedJsonGenerator.unpopulated("drt_dq_210101_144059_6361.zip", "drt_dq_210101_144059_6361.json")
+  private val json0102 =
+    ProcessedJsonGenerator.unpopulated("drt_dq_210102_144059_6362.zip", "drt_dq_210102_144059_6362.json")
+  private val json0103 =
+    ProcessedJsonGenerator.unpopulated("drt_dq_210103_144059_6363.zip", "drt_dq_210103_144059_6363.json")
+  private val manifests0101 =
+    voyageManifestRows(ManifestGenerator.manifest("2021-01-01", "10:00"), 1, 2, "drt_dq_210101_144059_6361.json")
+  private val manifests0102 =
+    voyageManifestRows(ManifestGenerator.manifest("2021-01-02", "10:00"), 2, 2, "drt_dq_210102_144059_6362.json")
+  private val manifests0103 =
+    voyageManifestRows(ManifestGenerator.manifest("2021-01-03", "10:00"), 3, 2, "drt_dq_210103_144059_6363.json")
 
   before {
     InMemoryDatabase.dropAndCreateTables
@@ -71,17 +80,24 @@ class DataRetentionDaoTest extends AnyWordSpec with Matchers with BeforeAndAfter
 
       val (zips2, jsons2, manifests2) = zipsJsonsAndManifests
 
-      zips2.map(_.zip_file_name) should contain theSameElementsAs Seq("drt_dq_210101_144059_6361.zip", "drt_dq_210103_144059_6363.zip")
-      jsons2.map(_.json_file_name) should contain theSameElementsAs Seq("drt_dq_210101_144059_6361.json", "drt_dq_210103_144059_6363.json")
-      manifests2.map(_.json_file) should contain theSameElementsAs Seq("drt_dq_210101_144059_6361.json", "drt_dq_210103_144059_6363.json")
+      zips2.map(_.zip_file_name) should contain theSameElementsAs
+        Seq("drt_dq_210101_144059_6361.zip", "drt_dq_210103_144059_6363.zip")
+      jsons2.map(_.json_file_name) should contain theSameElementsAs
+        Seq("drt_dq_210101_144059_6361.json", "drt_dq_210103_144059_6363.json")
+      manifests2.map(_.json_file) should contain theSameElementsAs
+        Seq("drt_dq_210101_144059_6361.json", "drt_dq_210103_144059_6363.json")
     }
 
     "delete up to batch size records for the given date, followed by the remaining records if there are fewer than batch size left" in {
       val batchSize = 2
-      val json0102a = ProcessedJsonGenerator.unpopulated("drt_dq_210102_144059_6362.zip", "drt_dq_210102_144059_0001.json")
-      val manifests0102a = voyageManifestRows(ManifestGenerator.manifest("2021-01-02", "10:00"), 2, 2, "drt_dq_210102_144059_0001.json")
-      val json0102b = ProcessedJsonGenerator.unpopulated("drt_dq_210102_144059_6362.zip", "drt_dq_210102_144059_0002.json")
-      val manifests0102b = voyageManifestRows(ManifestGenerator.manifest("2021-01-02", "10:00"), 2, 2, "drt_dq_210102_144059_0002.json")
+      val json0102a =
+        ProcessedJsonGenerator.unpopulated("drt_dq_210102_144059_6362.zip", "drt_dq_210102_144059_0001.json")
+      val manifests0102a =
+        voyageManifestRows(ManifestGenerator.manifest("2021-01-02", "10:00"), 2, 2, "drt_dq_210102_144059_0001.json")
+      val json0102b =
+        ProcessedJsonGenerator.unpopulated("drt_dq_210102_144059_6362.zip", "drt_dq_210102_144059_0002.json")
+      val manifests0102b =
+        voyageManifestRows(ManifestGenerator.manifest("2021-01-02", "10:00"), 2, 2, "drt_dq_210102_144059_0002.json")
 
       Await.ready(
         jsonDao
@@ -100,25 +116,32 @@ class DataRetentionDaoTest extends AnyWordSpec with Matchers with BeforeAndAfter
       manifests1 should have size 5
 
       val dateToDelete = SDate("2021-01-02")
-      Await.result(retentionDao.deleteForDate(dateToDelete, batchSize), 1.second) shouldBe(batchSize, batchSize, 0)
+      Await.result(retentionDao.deleteForDate(dateToDelete, batchSize), 1.second) shouldBe (batchSize, batchSize, 0)
 
       val (zips2, jsons2, manifests2) = zipsJsonsAndManifests
 
-      zips2.map(_.zip_file_name) should contain theSameElementsAs Seq("drt_dq_210101_144059_6361.zip", "drt_dq_210102_144059_6362.zip", "drt_dq_210103_144059_6363.zip")
-      jsons2.map(_.json_file_name) should contain theSameElementsAs Seq("drt_dq_210101_144059_6361.json", "drt_dq_210102_144059_6362.json", "drt_dq_210103_144059_6363.json")
-      manifests2.map(_.json_file) should contain theSameElementsAs Seq("drt_dq_210101_144059_6361.json", "drt_dq_210102_144059_6362.json", "drt_dq_210103_144059_6363.json")
+      zips2.map(_.zip_file_name) should contain theSameElementsAs
+        Seq("drt_dq_210101_144059_6361.zip", "drt_dq_210102_144059_6362.zip", "drt_dq_210103_144059_6363.zip")
+      jsons2.map(_.json_file_name) should contain theSameElementsAs
+        Seq("drt_dq_210101_144059_6361.json", "drt_dq_210102_144059_6362.json", "drt_dq_210103_144059_6363.json")
+      manifests2.map(_.json_file) should contain theSameElementsAs
+        Seq("drt_dq_210101_144059_6361.json", "drt_dq_210102_144059_6362.json", "drt_dq_210103_144059_6363.json")
 
-      Await.result(retentionDao.deleteForDate(dateToDelete, batchSize), 1.second) shouldBe(1, 1, 1)
+      Await.result(retentionDao.deleteForDate(dateToDelete, batchSize), 1.second) shouldBe (1, 1, 1)
 
       val (zips3, jsons3, manifests3) = zipsJsonsAndManifests
 
-      zips3.map(_.zip_file_name) should contain theSameElementsAs Seq("drt_dq_210101_144059_6361.zip", "drt_dq_210103_144059_6363.zip")
-      jsons3.map(_.json_file_name) should contain theSameElementsAs Seq("drt_dq_210101_144059_6361.json", "drt_dq_210103_144059_6363.json")
-      manifests3.map(_.json_file) should contain theSameElementsAs Seq("drt_dq_210101_144059_6361.json", "drt_dq_210103_144059_6363.json")
+      zips3.map(_.zip_file_name) should contain theSameElementsAs
+        Seq("drt_dq_210101_144059_6361.zip", "drt_dq_210103_144059_6363.zip")
+      jsons3.map(_.json_file_name) should contain theSameElementsAs
+        Seq("drt_dq_210101_144059_6361.json", "drt_dq_210103_144059_6363.json")
+      manifests3.map(_.json_file) should contain theSameElementsAs
+        Seq("drt_dq_210101_144059_6361.json", "drt_dq_210103_144059_6363.json")
     }
   }
 
-  private def zipsJsonsAndManifests: (Seq[ProcessedZipRow], Seq[ProcessedJsonRow], Seq[VoyageManifestPassengerInfoRow]) = {
+  private def zipsJsonsAndManifests
+      : (Seq[ProcessedZipRow], Seq[ProcessedJsonRow], Seq[VoyageManifestPassengerInfoRow]) = {
     val result = InMemoryDatabase.run(zipTable.result)
       .flatMap(zipRows => InMemoryDatabase.run(jsonTable.result).map(jsonRows => (zipRows, jsonRows)))
       .flatMap { case (zipRows, jsonRows) =>

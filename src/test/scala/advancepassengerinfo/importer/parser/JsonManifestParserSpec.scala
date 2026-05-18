@@ -1,10 +1,10 @@
 package advancepassengerinfo.importer.parser
 
-import advancepassengerinfo.manifests.{PassengerInfo, VoyageManifest}
+import advancepassengerinfo.manifests.{ PassengerInfo, VoyageManifest }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.util.{Failure, Success}
+import scala.util.{ Failure, Success }
 
 class JsonManifestParserSpec extends AnyWordSpec with Matchers {
   val validJsonManifest: String =
@@ -61,11 +61,21 @@ class JsonManifestParserSpec extends AnyWordSpec with Matchers {
     "give a valid VoyageManifest" in {
       val vmTry = JsonManifestParser.parseVoyagePassengerInfo(validJsonManifest)
 
-      val expected = Success(VoyageManifest("DC","STN","BRE","3631","FR","2016-03-02","07:30:00",List(
-        PassengerInfo(Some("P"),"MAR","",Some("21"),Some("STN"),"N",Some("GBR"),Some("MAR"),None),
-        PassengerInfo(Some("G"),"","",Some("43"),Some("STN"),"N",Some("GBR"),Some(""),None))))
+      val expected = Success(VoyageManifest(
+        "DC",
+        "STN",
+        "BRE",
+        "3631",
+        "FR",
+        "2016-03-02",
+        "07:30:00",
+        List(
+          PassengerInfo(Some("P"), "MAR", "", Some("21"), Some("STN"), "N", Some("GBR"), Some("MAR"), None),
+          PassengerInfo(Some("G"), "", "", Some("43"), Some("STN"), "N", Some("GBR"), Some(""), None)
+        )
+      ))
 
-      vmTry should be (expected)
+      vmTry should be(expected)
     }
   }
 
@@ -73,12 +83,12 @@ class JsonManifestParserSpec extends AnyWordSpec with Matchers {
     "give a Failure" in {
       val isFailure = JsonManifestParser.parseVoyagePassengerInfo(invalidJsonManifest) match {
         case Failure(_) => true
-        case _ => false
+        case _          => false
       }
 
       val expected = true
 
-      isFailure should be (expected)
+      isFailure should be(expected)
     }
   }
 }

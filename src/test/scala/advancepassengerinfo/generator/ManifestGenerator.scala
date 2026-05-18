@@ -1,6 +1,6 @@
 package advancepassengerinfo.generator
 
-import advancepassengerinfo.manifests.{PassengerInfo, VoyageManifest}
+import advancepassengerinfo.manifests.{ PassengerInfo, VoyageManifest }
 
 object ManifestGenerator {
   def passengerInfo(): PassengerInfo = PassengerInfo(
@@ -16,6 +16,13 @@ object ManifestGenerator {
   )
 
   def manifest(date: String, time: String): VoyageManifest = VoyageManifest(
-    "DC", "LHR", "JFK", "1000", "BA", date, time, List(passengerInfo())
+    "DC",
+    "LHR",
+    "JFK",
+    "1000",
+    "BA",
+    date,
+    time,
+    List(passengerInfo())
   )
 }

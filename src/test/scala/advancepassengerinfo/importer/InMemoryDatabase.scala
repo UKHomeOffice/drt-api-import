@@ -1,6 +1,10 @@
 package advancepassengerinfo.importer
 
-import advancepassengerinfo.importer.slickdb.tables.{ProcessedJsonTable, ProcessedZipTable, VoyageManifestPassengerInfoTable}
+import advancepassengerinfo.importer.slickdb.tables.{
+  ProcessedJsonTable,
+  ProcessedZipTable,
+  VoyageManifestPassengerInfoTable
+}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
@@ -23,8 +27,8 @@ object InMemoryDatabase extends Db {
       TableQuery[ProcessedJsonTable].schema.dropIfExists,
       TableQuery[ProcessedJsonTable].schema.create,
       TableQuery[VoyageManifestPassengerInfoTable].schema.dropIfExists,
-      TableQuery[VoyageManifestPassengerInfoTable].schema.create,
-    )
-    ), 1.second
+      TableQuery[VoyageManifestPassengerInfoTable].schema.create
+    )),
+    1.second
   )
 }

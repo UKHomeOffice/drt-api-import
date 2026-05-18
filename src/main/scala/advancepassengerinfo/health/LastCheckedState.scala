@@ -3,7 +3,7 @@ package advancepassengerinfo.health
 import drtlib.SDate
 import org.slf4j.LoggerFactory
 
-import scala.concurrent.duration.{DurationLong, FiniteDuration}
+import scala.concurrent.duration.{ DurationLong, FiniteDuration }
 
 case class LastCheckedState(now: () => SDate) {
   private val log = LoggerFactory.getLogger(getClass)
@@ -17,7 +17,9 @@ case class LastCheckedState(now: () => SDate) {
         val checkedWithinThreshold = lastCheckedAgo <= threshold
 
         if (!checkedWithinThreshold)
-          log.warn(s"Last checked at $lca, which was $lastCheckedAgo ago, which is more than the threshold of $threshold")
+          log.warn(
+            s"Last checked at $lca, which was $lastCheckedAgo ago, which is more than the threshold of $threshold"
+          )
 
         checkedWithinThreshold
       }

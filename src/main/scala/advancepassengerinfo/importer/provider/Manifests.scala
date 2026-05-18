@@ -8,16 +8,14 @@ import org.apache.pekko.stream.scaladsl.Source
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.zip.ZipInputStream
 import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Try}
-
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.{ Failure, Try }
 
 trait Manifests {
   def tryManifests(fileName: String): Source[Try[Seq[(String, Try[VoyageManifest])]], NotUsed]
 }
 
-case class ZippedManifests(fileProvider: FileAsStream)
-                          (implicit ec: ExecutionContext) extends Manifests {
+case class ZippedManifests(fileProvider: FileAsStream)(implicit ec: ExecutionContext) extends Manifests {
   override def tryManifests(fileName: String): Source[Try[Seq[(String, Try[VoyageManifest])]], NotUsed] =
     Source
       .future(zipInputStream(fileName))

@@ -1,28 +1,32 @@
 package advancepassengerinfo.importer
 
-import advancepassengerinfo.health.{HealthRoute, LastCheckedState}
+import advancepassengerinfo.health.{ HealthRoute, LastCheckedState }
 import advancepassengerinfo.importer.processor.DqFileProcessorImpl
 import advancepassengerinfo.importer.provider._
 import advancepassengerinfo.importer.services.Retention
 import advancepassengerinfo.importer.slickdb.DatabaseImpl
-import advancepassengerinfo.importer.slickdb.dao.{DataRetentionDao, ProcessedJsonDaoImpl, ProcessedZipDaoImpl, VoyageManifestPassengerInfoDaoImpl}
+import advancepassengerinfo.importer.slickdb.dao.{
+  DataRetentionDao,
+  ProcessedJsonDaoImpl,
+  ProcessedZipDaoImpl,
+  VoyageManifestPassengerInfoDaoImpl
+}
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.Http
-import org.apache.pekko.stream.scaladsl.{Sink, Source}
+import org.apache.pekko.stream.scaladsl.{ Sink, Source }
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.Logger
 import drtlib.SDate
 import metrics.StatsDMetrics
-import slick.dbio.{DBIOAction, NoStream}
-import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
+import slick.dbio.{ DBIOAction, NoStream }
+import software.amazon.awssdk.auth.credentials.{ AwsBasicCredentials, StaticCredentialsProvider }
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 
 import java.util.TimeZone
-import scala.concurrent.duration.{Duration, DurationInt}
-import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
+import scala.concurrent.duration.{ Duration, DurationInt }
+import scala.concurrent.{ Await, ExecutionContext, ExecutionContextExecutor, Future }
 import scala.util.Try
-
 
 object Application extends App {
   val log = Logger(getClass)
@@ -64,7 +68,10 @@ object Application extends App {
   private val zipProcessor = DqFileProcessorImpl(manifestsProvider, zipDao, jsonDao, manifestsDao)
   private val feed = DqApiFeedImpl(s3FileNamesProvider, zipProcessor, 1.minute, StatsDMetrics, lastCheckedState)
 
-  Http().newServerAt(config.getString("server.host"), config.getInt("server.port")).bind(HealthRoute(lastCheckedState, 5.minutes))
+  Http().newServerAt(config.getString("server.host"), config.getInt("server.port")).bind(HealthRoute(
+    lastCheckedState,
+    5.minutes
+  ))
 
   private val eventual = Source
     .future(zipDao.lastPersistedFileName)
@@ -88,13 +95,15 @@ object Application extends App {
     }.runWith(Sink.ignore)
 
   val isBeyondRetentionPeriod = Retention.isOlderThanRetentionThreshold(retainDataForYears, SDate.now)
-  val oldestData = () => zipDao.oldestDate.map { md =>
-    md
-      .flatMap(d => Try(SDate(d)).toOption)
-      .filter(isBeyondRetentionPeriod)
-  }
+  val oldestData = () =>
+    zipDao.oldestDate.map { md =>
+      md
+        .flatMap(d => Try(SDate(d)).toOption)
+        .filter(isBeyondRetentionPeriod)
+    }
   val maxJsonDeletionBatchSize = config.getInt("app.max-json-deletion-batch-size")
-  val deleteOldData = Retention.deleteOldData(oldestData, (date: SDate) => retentionDao.deleteForDate(date, maxJsonDeletionBatchSize))
+  val deleteOldData =
+    Retention.deleteOldData(oldestData, (date: SDate) => retentionDao.deleteForDate(date, maxJsonDeletionBatchSize))
 
   if (config.getBoolean("app.purge-old-data"))
     actorSystem.scheduler.scheduleAtFixedRate(0.seconds, 1.minute)(() => Await.ready(deleteOldData(), 60.minutes))
@@ -120,4 +129,3 @@ object PostgresDb extends Db {
   override val profile = DatabaseImpl.profile
   val con: profile.backend.Database = profile.api.Database.forConfig("db")
 }
-

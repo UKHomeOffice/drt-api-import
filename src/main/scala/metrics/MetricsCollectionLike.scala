@@ -1,7 +1,7 @@
 package metrics
 
 import github.gphat.censorinus.StatsDClient
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.{ Logger, LoggerFactory }
 
 trait MetricsCollectorLike {
   def counter(name: String, value: Double): Unit

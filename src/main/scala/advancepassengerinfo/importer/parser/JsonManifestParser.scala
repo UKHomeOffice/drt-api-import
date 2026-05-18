@@ -1,8 +1,8 @@
 package advancepassengerinfo.importer.parser
 
-import advancepassengerinfo.manifests.{PassengerInfo, VoyageManifest}
+import advancepassengerinfo.manifests.{ PassengerInfo, VoyageManifest }
 import com.typesafe.scalalogging.Logger
-import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+import spray.json.{ DefaultJsonProtocol, RootJsonFormat }
 
 import scala.util.Try
 
@@ -14,7 +14,8 @@ object JsonManifestParser {
   }
 
   object FlightPassengerInfoProtocol extends DefaultJsonProtocol {
-    implicit val passengerInfoConverter: RootJsonFormat[PassengerInfo] = jsonFormat(PassengerInfo,
+    implicit val passengerInfoConverter: RootJsonFormat[PassengerInfo] = jsonFormat(
+      PassengerInfo,
       "DocumentType",
       "DocumentIssuingCountryCode",
       "NationalityCountryEEAFlag",
