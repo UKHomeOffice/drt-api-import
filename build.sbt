@@ -28,8 +28,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "drt-api-import",
     libraryDependencies ++= AppDependencies.compileDependencies,
-    libraryDependencies ++= AppDependencies.testDependencies,
-    dockerBaseImage := "openjdk:11-jre-slim-buster"
+    libraryDependencies ++= AppDependencies.testDependencies
   )
   .settings(CodeCoverageSettings.codeCoverageSettings)
   .settings(SbtUpdatesSettings.sbtUpdatesSettings)
